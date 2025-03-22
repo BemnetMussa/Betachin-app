@@ -1,4 +1,4 @@
-// lib/widgets/app_drawer.dart
+// File: lib/widgets/app_drawer.dart
 
 import 'package:flutter/material.dart';
 import '../screens/home_screen.dart';
@@ -6,7 +6,7 @@ import '../screens/buy_rent_screen.dart';
 import '../screens/guidelines_screen.dart';
 
 class AppDrawer extends StatelessWidget {
-  const AppDrawer({Key? key}) : super(key: key);
+  const AppDrawer({super.key}); // Updated to use super parameter
 
   @override
   Widget build(BuildContext context) {
@@ -15,23 +15,30 @@ class AppDrawer extends StatelessWidget {
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(color: Theme.of(context).primaryColor),
+            decoration: const BoxDecoration(color: Colors.blue),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
-              children: const [
-                Text(
-                  'Betachin',
+              children: [
+                // Suggestion: Added user profile section
+                const CircleAvatar(
+                  radius: 30,
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.person, size: 40, color: Colors.blue),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Guest User', // Placeholder for user name
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 24,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 8),
-                Text(
-                  'Real Estate Platform',
-                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                const SizedBox(height: 4),
+                const Text(
+                  'Find your dream home',
+                  style: TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ],
             ),
@@ -47,7 +54,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.apartment),
+            leading: const Icon(Icons.business),
             title: const Text('Buy & Rent'),
             onTap: () {
               Navigator.pushReplacement(
@@ -57,7 +64,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.info_outline),
+            leading: const Icon(Icons.article),
             title: const Text('Guidelines'),
             onTap: () {
               Navigator.pushReplacement(
@@ -73,9 +80,6 @@ class AppDrawer extends StatelessWidget {
             leading: const Icon(Icons.logout),
             title: const Text('Logout'),
             onTap: () {
-              // For now, just close the drawer
-              // Later, we will implement actual logout functionality
-              Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text(
@@ -83,6 +87,7 @@ class AppDrawer extends StatelessWidget {
                   ),
                 ),
               );
+              Navigator.pop(context);
             },
           ),
         ],

@@ -1,57 +1,75 @@
-// lib/screens/home_screen.dart
+// File: lib/screens/home_screen.dart
 
 import 'package:flutter/material.dart';
 import '../models/property.dart';
 import '../widgets/property_card.dart';
-import '../widgets/search_bar.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/search_bar.dart';
 import 'buy_rent_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key}); // Updated to use super parameter
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<Property> properties = [];
-  List<Property> filteredProperties = [];
-  String searchQuery = '';
+  late List<Property> _properties;
+  late List<Property> _featuredProperties;
+  String _searchQuery = '';
+  bool _isLoading = false; // Suggestion: Added for loading state
 
   @override
   void initState() {
     super.initState();
-    // Load sample properties
-    properties = Property.getSampleProperties();
-    filteredProperties = properties;
+    // In a real app, this would come from an API
+    _properties = Property.getSampleProperties();
+    // For featured properties, we're just using the first 3
+    _featuredProperties = _properties.take(3).toList();
   }
 
-  void _filterProperties(String query) {
+  void _handleSearch(String query) {
     setState(() {
-      searchQuery = query;
-      if (query.isEmpty) {
-        filteredProperties = properties;
-      } else {
-        filteredProperties =
-            properties.where((property) {
-              return property.title.toLowerCase().contains(
-                    query.toLowerCase(),
-                  ) ||
-                  property.location.toLowerCase().contains(query.toLowerCase());
-            }).toList();
-      }
+      _isLoading = true; // Suggestion: Show loading while filtering
+      _searchQuery = query.toLowerCase();
+      // Filter properties based on search query
+      _properties =
+          Property.getSampleProperties().where((property) {
+            return property.title.toLowerCase().contains(_searchQuery) ||
+                property.location.toLowerCase().contains(_searchQuery) ||
+                property.description.toLowerCase().contains(_searchQuery) ||
+                property.price.toString().contains(
+                  _searchQuery,
+                ); // Suggestion: Added price search
+          }).toList();
+      _featuredProperties = _properties.take(3).toList();
+      _isLoading = false;
     });
+  }
+
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Filter Properties'),
+            content: const Text('Filtering options will be implemented later.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get featured properties (assuming the first two are featured)
-    List<Property> featuredProperties = properties.take(2).toList();
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Betachin Real Estate'),
+        title: const Text('BetaChin Real Estate'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -69,139 +87,107 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       drawer: const AppDrawer(),
       body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Search Bar
-            SearchBar(onSearch: _filterProperties),
-
-            // Featured Properties Section
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Text(
-                'Featured Properties',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Search Bar
+              PropertySearchBar(
+                onSearch: _handleSearch,
+                onFilterTap: _showFilterDialog,
               ),
-            ),
-            SizedBox(
-              height: 300,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: featuredProperties.length,
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                itemBuilder: (context, index) {
-                  return SizedBox(
-                    width: 300,
-                    child: PropertyCard(property: featuredProperties[index]),
-                  );
-                },
-              ),
-            ),
 
-            // Browse by Category
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 24),
+
+              // Featured Listings
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Browse by Category',
+                    'Featured Listings',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildCategoryButton(
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
                         context,
-                        'Buy',
-                        Icons.home,
-                        Colors.blue,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) =>
-                                      const BuyRentScreen(initialTabIndex: 0),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildCategoryButton(
-                        context,
-                        'Rent',
-                        Icons.apartment,
-                        Colors.green,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) =>
-                                      const BuyRentScreen(initialTabIndex: 1),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                        MaterialPageRoute(
+                          builder: (context) => const BuyRentScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text('See All'),
                   ),
                 ],
               ),
-            ),
 
-            // Recent Properties
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Text(
-                'Latest Properties',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: filteredProperties.length,
-              itemBuilder: (context, index) {
-                return PropertyCard(property: filteredProperties[index]);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+              const SizedBox(height: 8),
 
-  Widget _buildCategoryButton(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onPressed,
-  ) {
-    return InkWell(
-      onTap: onPressed,
-      child: Container(
-        width: 150,
-        padding: const EdgeInsets.symmetric(vertical: 16.0),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(8.0),
-          border: Border.all(color: color, width: 2),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 40, color: color),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: color,
+              _isLoading // Suggestion: Show loading indicator
+                  ? const Center(child: CircularProgressIndicator())
+                  : SizedBox(
+                    height: 320,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _featuredProperties.length,
+                      itemBuilder: (context, index) {
+                        return SizedBox(
+                          width: 280,
+                          child: PropertyCard(
+                            property: _featuredProperties[index],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+              const SizedBox(height: 24),
+
+              // Recent Properties
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Recent Properties',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BuyRentScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text('See All'),
+                  ),
+                ],
               ),
-            ),
-          ],
+
+              const SizedBox(height: 8),
+
+              // Grid of properties
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.75,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                        ),
+                    itemCount: _properties.length > 4 ? 4 : _properties.length,
+                    itemBuilder: (context, index) {
+                      return PropertyCard(property: _properties[index]);
+                    },
+                  ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,38 +1,35 @@
-// lib/screens/buy_rent_screen.dart
+// File: lib/screens/buy_rent_screen.dart
 
 import 'package:flutter/material.dart';
 import '../models/property.dart';
 import '../widgets/property_card.dart';
-import '../widgets/search_bar.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/search_bar.dart';
 
 class BuyRentScreen extends StatefulWidget {
-  final int initialTabIndex;
-
-  const BuyRentScreen({Key? key, this.initialTabIndex = 0}) : super(key: key);
+  const BuyRentScreen({super.key}); // Updated to use super parameter
 
   @override
-  _BuyRentScreenState createState() => _BuyRentScreenState();
+  State<BuyRentScreen> createState() => _BuyRentScreenState();
 }
 
 class _BuyRentScreenState extends State<BuyRentScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  List<Property> properties = [];
-  List<Property> filteredProperties = [];
-  String searchQuery = '';
+  late List<Property> _allProperties;
+  late List<Property> _buyProperties;
+  late List<Property> _rentProperties;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-      length: 2,
-      vsync: this,
-      initialIndex: widget.initialTabIndex,
-    );
-    // Load sample properties
-    properties = Property.getSampleProperties();
-    _filterProperties('');
+    _tabController = TabController(length: 3, vsync: this);
+
+    // In a real app, this would come from an API
+    _allProperties = Property.getSampleProperties();
+    _buyProperties = _allProperties.where((p) => !p.isForRent).toList();
+    _rentProperties = _allProperties.where((p) => p.isForRent).toList();
   }
 
   @override
@@ -41,62 +38,79 @@ class _BuyRentScreenState extends State<BuyRentScreen>
     super.dispose();
   }
 
-  void _filterProperties(String query) {
+  void _handleSearch(String query) {
     setState(() {
-      searchQuery = query;
-      if (query.isEmpty) {
-        filteredProperties = properties;
-      } else {
-        filteredProperties =
-            properties.where((property) {
-              return property.title.toLowerCase().contains(
-                    query.toLowerCase(),
-                  ) ||
-                  property.location.toLowerCase().contains(query.toLowerCase());
-            }).toList();
-      }
+      _searchQuery = query.toLowerCase();
     });
+  }
+
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Filter Properties'),
+            content: const Text('Filtering options will be implemented later.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  List<Property> _getFilteredProperties(List<Property> properties) {
+    if (_searchQuery.isEmpty) return properties;
+
+    return properties.where((property) {
+      return property.title.toLowerCase().contains(_searchQuery) ||
+          property.location.toLowerCase().contains(_searchQuery) ||
+          property.description.toLowerCase().contains(_searchQuery);
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final filteredAll = _getFilteredProperties(_allProperties);
+    final filteredBuy = _getFilteredProperties(_buyProperties);
+    final filteredRent = _getFilteredProperties(_rentProperties);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Buy & Rent Properties'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Logout functionality will be implemented later',
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
+        title: const Text('Properties'),
+        // Suggestion: Removed duplicate logout button (already in drawer)
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [Tab(text: 'BUY'), Tab(text: 'RENT')],
+          tabs: const [Tab(text: 'All'), Tab(text: 'Buy'), Tab(text: 'Rent')],
         ),
       ),
       drawer: const AppDrawer(),
       body: Column(
         children: [
-          // Search Bar
-          SearchBar(onSearch: _filterProperties),
+          // Search and Filter
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: PropertySearchBar(
+              onSearch: _handleSearch,
+              onFilterTap: _showFilterDialog,
+            ),
+          ),
 
-          // Tab View
+          // Tab Content
           Expanded(
             child: TabBarView(
               controller: _tabController,
               children: [
-                // BUY Tab
-                _buildPropertyList(false),
-                // RENT Tab
-                _buildPropertyList(true),
+                // All Properties Tab
+                _buildPropertyList(filteredAll),
+
+                // Buy Properties Tab
+                _buildPropertyList(filteredBuy),
+
+                // Rent Properties Tab
+                _buildPropertyList(filteredRent),
               ],
             ),
           ),
@@ -105,36 +119,16 @@ class _BuyRentScreenState extends State<BuyRentScreen>
     );
   }
 
-  Widget _buildPropertyList(bool isForRent) {
-    final List<Property> relevantProperties =
-        filteredProperties
-            .where((property) => property.isForRent == isForRent)
-            .toList();
-
-    if (relevantProperties.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isForRent ? Icons.apartment : Icons.home,
-              size: 80,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No ${isForRent ? 'rental' : 'sale'} properties found',
-              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-            ),
-          ],
-        ),
-      );
+  Widget _buildPropertyList(List<Property> properties) {
+    if (properties.isEmpty) {
+      return const Center(child: Text('No properties found'));
     }
 
     return ListView.builder(
-      itemCount: relevantProperties.length,
+      padding: const EdgeInsets.all(16.0),
+      itemCount: properties.length,
       itemBuilder: (context, index) {
-        return PropertyCard(property: relevantProperties[index]);
+        return PropertyCard(property: properties[index]);
       },
     );
   }
