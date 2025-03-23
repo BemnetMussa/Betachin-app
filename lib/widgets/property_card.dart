@@ -1,16 +1,64 @@
 // File: lib/widgets/property_card.dart
 
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/property.dart';
 import '../screens/property_detail_screen.dart';
+import '../utils/favorites_manager.dart';
 
-class PropertyCard extends StatelessWidget {
+class PropertyCard extends StatefulWidget {
   final Property property;
 
-  const PropertyCard({
-    super.key,
-    required this.property,
-  }); // Updated to use super parameter
+  const PropertyCard({super.key, required this.property});
+
+  @override
+  State<PropertyCard> createState() => _PropertyCardState();
+}
+
+class _PropertyCardState extends State<PropertyCard> {
+  bool _isFavorite = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFavoriteStatus();
+  }
+
+  Future<void> _checkFavoriteStatus() async {
+    bool isFav = await FavoritesManager.isFavorite(widget.property.id);
+    setState(() {
+      _isFavorite = isFav;
+    });
+  }
+
+  Future<void> _toggleFavorite() async {
+    // Store the ScaffoldMessenger before the async operation
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    if (_isFavorite) {
+      await FavoritesManager.removeFavorite(widget.property.id);
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('Removed ${widget.property.title} from favorites'),
+          ),
+        );
+      }
+    } else {
+      await FavoritesManager.addFavorite(widget.property.id);
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('Added ${widget.property.title} to favorites'),
+          ),
+        );
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _isFavorite = !_isFavorite;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +71,8 @@ class PropertyCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PropertyDetailScreen(property: property),
+              builder:
+                  (context) => PropertyDetailScreen(property: widget.property),
             ),
           );
         },
@@ -39,39 +88,35 @@ class PropertyCard extends StatelessWidget {
                     topRight: Radius.circular(12.0),
                   ),
                   child: Container(
-                    height: 160,
+                    height: 120,
                     width: double.infinity,
                     color: Colors.grey[300],
                     child:
-                        property.imageUrls.isNotEmpty
-                            ? Image.network(
-                              property.imageUrls[0],
+                        widget.property.imageUrls.isNotEmpty
+                            ? CachedNetworkImage(
+                              imageUrl: widget.property.imageUrls[0],
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Center(
-                                  child: Icon(Icons.home, size: 60),
-                                );
-                              },
+                              placeholder:
+                                  (context, url) => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                              errorWidget:
+                                  (context, url, error) => const Center(
+                                    child: Icon(Icons.home, size: 60),
+                                  ),
                             )
                             : const Center(child: Icon(Icons.home, size: 60)),
                   ),
                 ),
-                // Suggestion: Added favorite button
                 Positioned(
                   top: 8,
                   right: 8,
                   child: IconButton(
-                    icon: const Icon(
-                      Icons.favorite_border,
-                      color: Colors.white,
+                    icon: Icon(
+                      _isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: _isFavorite ? Colors.red : Colors.white,
                     ),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Added ${property.title} to favorites'),
-                        ),
-                      );
-                    },
+                    onPressed: _toggleFavorite,
                   ),
                 ),
               ],
@@ -79,7 +124,7 @@ class PropertyCard extends StatelessWidget {
 
             // Property Details
             Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.all(8.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -89,10 +134,10 @@ class PropertyCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          property.title,
+                          widget.property.title,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: 14,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -100,37 +145,40 @@ class PropertyCard extends StatelessWidget {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: 6,
+                          vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: property.isForRent ? Colors.green : Colors.red,
+                          color:
+                              widget.property.isForRent
+                                  ? Colors.green
+                                  : Colors.red,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          property.isForRent ? 'Rent' : 'Sale',
+                          widget.property.isForRent ? 'Rent' : 'Sale',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 12,
+                            fontSize: 10,
                           ),
                         ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
 
                   // Price
                   Text(
-                    '\$${property.price.toStringAsFixed(0)}${property.isForRent ? '/month' : ''}',
+                    '\$${widget.property.price.toStringAsFixed(0)}${widget.property.isForRent ? '/month' : ''}',
                     style: const TextStyle(
                       color: Colors.blue,
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: 16,
                     ),
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
 
                   // Location
                   Row(
@@ -138,15 +186,15 @@ class PropertyCard extends StatelessWidget {
                       const Icon(
                         Icons.location_on,
                         color: Colors.grey,
-                        size: 16,
+                        size: 14,
                       ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          property.location,
+                          widget.property.location,
                           style: TextStyle(
                             color: Colors.grey[700],
-                            fontSize: 14,
+                            fontSize: 12,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -155,17 +203,32 @@ class PropertyCard extends StatelessWidget {
                     ],
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
 
                   // Features
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildFeature(Icons.king_bed, '${property.bedrooms}'),
-                      _buildFeature(Icons.bathtub, '${property.bathrooms}'),
-                      _buildFeature(
-                        Icons.square_foot,
-                        '${property.area} sq ft',
+                      Flexible(
+                        child: _buildFeature(
+                          Icons.king_bed,
+                          '${widget.property.bedrooms}',
+                          12,
+                        ),
+                      ),
+                      Flexible(
+                        child: _buildFeature(
+                          Icons.bathtub,
+                          '${widget.property.bathrooms}',
+                          12,
+                        ),
+                      ),
+                      Flexible(
+                        child: _buildFeature(
+                          Icons.square_foot,
+                          '${widget.property.area} sq ft',
+                          12,
+                        ),
                       ),
                     ],
                   ),
@@ -178,12 +241,18 @@ class PropertyCard extends StatelessWidget {
     );
   }
 
-  Widget _buildFeature(IconData icon, String text) {
+  Widget _buildFeature(IconData icon, String text, double fontSize) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.grey[600]),
+        Icon(icon, size: 14, color: Colors.grey[600]),
         const SizedBox(width: 4),
-        Text(text, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: fontSize, color: Colors.grey[600]),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }

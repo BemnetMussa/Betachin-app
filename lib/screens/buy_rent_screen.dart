@@ -7,7 +7,7 @@ import '../widgets/app_drawer.dart';
 import '../widgets/search_bar.dart';
 
 class BuyRentScreen extends StatefulWidget {
-  const BuyRentScreen({super.key}); // Updated to use super parameter
+  const BuyRentScreen({super.key});
 
   @override
   State<BuyRentScreen> createState() => _BuyRentScreenState();
@@ -20,6 +20,8 @@ class _BuyRentScreenState extends State<BuyRentScreen>
   late List<Property> _buyProperties;
   late List<Property> _rentProperties;
   String _searchQuery = '';
+  double _minPrice = 0.0; // Added for filtering
+  double _maxPrice = double.infinity; // Added for filtering
 
   @override
   void initState() {
@@ -45,16 +47,53 @@ class _BuyRentScreenState extends State<BuyRentScreen>
   }
 
   void _showFilterDialog() {
+    final minPriceController = TextEditingController();
+    final maxPriceController = TextEditingController();
+
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Filter Properties'),
-            content: const Text('Filtering options will be implemented later.'),
+            title: const Text('Filter Properties by Price'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: minPriceController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Min Price',
+                    hintText: 'e.g., 1000',
+                  ),
+                ),
+                TextField(
+                  controller: maxPriceController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Max Price',
+                    hintText: 'e.g., 5000',
+                  ),
+                ),
+              ],
+            ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _minPrice = double.tryParse(minPriceController.text) ?? 0.0;
+                    _maxPrice =
+                        double.tryParse(maxPriceController.text) ??
+                        double.infinity;
+                  });
+                  Navigator.pop(context);
+                },
+                child: const Text('Apply'),
               ),
             ],
           ),
@@ -62,13 +101,24 @@ class _BuyRentScreenState extends State<BuyRentScreen>
   }
 
   List<Property> _getFilteredProperties(List<Property> properties) {
-    if (_searchQuery.isEmpty) return properties;
+    // Apply search filter
+    var filtered = properties;
+    if (_searchQuery.isNotEmpty) {
+      filtered =
+          filtered.where((property) {
+            return property.title.toLowerCase().contains(_searchQuery) ||
+                property.location.toLowerCase().contains(_searchQuery) ||
+                property.description.toLowerCase().contains(_searchQuery);
+          }).toList();
+    }
 
-    return properties.where((property) {
-      return property.title.toLowerCase().contains(_searchQuery) ||
-          property.location.toLowerCase().contains(_searchQuery) ||
-          property.description.toLowerCase().contains(_searchQuery);
-    }).toList();
+    // Apply price filter
+    filtered =
+        filtered.where((property) {
+          return property.price >= _minPrice && property.price <= _maxPrice;
+        }).toList();
+
+    return filtered;
   }
 
   @override
@@ -80,7 +130,6 @@ class _BuyRentScreenState extends State<BuyRentScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Properties'),
-        // Suggestion: Removed duplicate logout button (already in drawer)
         bottom: TabBar(
           controller: _tabController,
           tabs: const [Tab(text: 'All'), Tab(text: 'Buy'), Tab(text: 'Rent')],
