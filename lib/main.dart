@@ -1,53 +1,69 @@
-// File: lib/main.dart
-
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'login_page.dart';
+import 'signup_page.dart';
+import 'home_page.dart';
 
-void main() {
-  runApp(const BetaChinApp());
+// Make main async to wait for Supabase initialization
+Future<void> main() async {
+  // Ensure Flutter is initialized before using plugins
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    // Initialize Supabase before the app starts
+    await Supabase.initialize(
+      url: 'https://qjadmavgzuzrpyjmrjec.supabase.co',
+      anonKey:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqYWRtYXZnenV6cnB5am1yamVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2NjE2ODIsImV4cCI6MjA1OTIzNzY4Mn0.2xljHdHALzz5KWbf_g5z4Ut4BgrevvMsFwJbyvppn-o',
+    );
+
+    // Run app after successful initialization
+    runApp(const MyApp());
+  } catch (e) {
+    // If initialization fails, show error app
+    runApp(const SupabaseErrorApp());
+  }
 }
 
-class BetaChinApp extends StatelessWidget {
-  const BetaChinApp({super.key}); // Updated to use super parameter
+// Error app to show when Supabase initialization fails
+class SupabaseErrorApp extends StatelessWidget {
+  const SupabaseErrorApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'BetaChin Real Estate',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.grey[50],
-        appBarTheme: const AppBarTheme(elevation: 0, centerTitle: true),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-        cardTheme: CardTheme(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      home: Scaffold(
+        body: Center(
+          child: Text(
+            'Failed to initialize Supabase. Please check your URL and anon key.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.red, fontSize: 18),
           ),
         ),
       ),
-      home: const HomeScreen(),
-      // Suggestion: Add a splash screen or initial route for better UX
-      // initialRoute: '/splash',
-      // routes: {
-      //   '/splash': (context) => SplashScreen(),
-      //   '/home': (context) => HomeScreen(),
-      // },
+    );
+  }
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Check current session
+    final session = Supabase.instance.client.auth.currentSession;
+    final hasSession = session != null;
+
+    return MaterialApp(
+      title: 'Betachin App',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      initialRoute: hasSession ? '/home' : '/signup',
+      routes: {
+        '/login': (context) => const LoginPage(),
+        '/signup': (context) => const SignupPage(),
+        '/home': (context) => const HomePage(),
+      },
     );
   }
 }
