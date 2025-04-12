@@ -1,10 +1,26 @@
-####📱 Betachn – Housing Made Simple
-## Betachn is a mobile application designed to simplify the process of finding houses for rent or sale. It connects renters, buyers, and house owners directly—cutting out the middleman. Whether you're looking for your next home or trying to sell or rent out your property, Betachn gives you full control at your fingertips.
+# 📱 Betachn – Housing Made Simple
 
-##🚀 Features
-#🔍 Smart Search – Easily find properties based on location, price, type, and availability.
-# 🏠 List a Property – House owners can post their properties for rent or sale with photos, pricing, and descriptions.
-# 📍 Map Integration – View property locations on a map for better spatial awareness.
-# 💬 Direct Messaging – In-app chat system lets users communicate without needing external apps.
-# 🛎️ Real-Time Notifications – Get updates when someone messages you or interacts with your listing.
-# 📂 Saved Listings – Bookmark your favorite properties and access them anytime.
+**Betachn** is a mobile application that connects renters, buyers, and house owners **directly**, eliminating third-party involvement. Whether you're searching for a place to live or posting your own property, Betachn offers a simple and efficient experience right from your phone.
+
+---
+
+## 🚀 Features
+
+- 🔍 **Smart Property Search** – Filter by location, price, type, and availability.
+- 🏠 **Easy Property Listing** – Add your property details with images, pricing, and more.
+- 🗺️ **Interactive Map View** – Visualize property locations using map integration.
+- 💬 **In-App Chat** – Message property owners or potential tenants instantly.
+- 🔔 **Real-Time Notifications** – Get notified for messages, property interests, and activity.
+- ❤️ **Favorites** – Save and revisit properties you're interested in.
+
+---
+
+## 📱 Tech Stack
+
+- **Frontend**: Flutter  
+- **Backend**: superbase  
+- **Database**: postgres
+- **Authentication**: Superbase
+  
+
+---
