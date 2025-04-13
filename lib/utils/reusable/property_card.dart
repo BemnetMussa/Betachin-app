@@ -1,142 +1,134 @@
-// lib/utils/reusable/property_card.dart
-
+// lib/utils/reusables/property_card.dart
 import 'package:flutter/material.dart';
 
 class PropertyCard extends StatelessWidget {
-  final String imageUrl;
+  final int id;
   final String propertyName;
-  final String location;
+  final String address;
   final double rating;
-  final int reviews;
   final double price;
-  final bool isNight; // Whether price is per night
-  final bool isFeatured;
-  final bool
-  isManagementView; // Whether to show management buttons (List/Delist)
-  final VoidCallback? onTap;
-  final VoidCallback? onList;
-  final VoidCallback? onDelist;
+  final bool isRent;
+  final String imageUrl;
+  final int bedrooms;
+  final int bathrooms;
+  final int squareFeet;
+  final bool isFavorite;
+  final Function()? onFavoritePressed;
+  final Function()? onCardPressed;
 
   const PropertyCard({
     Key? key,
-    required this.imageUrl,
+    required this.id,
     required this.propertyName,
-    required this.location,
+    required this.address,
     required this.rating,
-    required this.reviews,
     required this.price,
-    this.isNight = false,
-    this.isFeatured = false,
-    this.isManagementView = false,
-    this.onTap,
-    this.onList,
-    this.onDelist,
+    required this.isRent,
+    required this.imageUrl,
+    required this.bedrooms,
+    required this.bathrooms,
+    required this.squareFeet,
+    this.isFavorite = false,
+    this.onFavoritePressed,
+    this.onCardPressed,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: onCardPressed,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
           color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Property Image with Featured Label
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
                   child: Image.network(
                     imageUrl,
-                    height: 180,
+                    height: 200,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        height: 180,
+                        height: 200,
+                        width: double.infinity,
                         color: Colors.grey[300],
-                        child: const Center(
-                          child: Icon(Icons.image_not_supported, size: 50),
-                        ),
+                        child: const Icon(Icons.home, size: 50),
                       );
                     },
                   ),
                 ),
-                if (isFeatured)
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'Featured',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      isRent ? "For Rent" : "For Sale",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
                       ),
                     ),
                   ),
-                // Add favorite button
+                ),
                 Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.favorite_border),
-                      onPressed: () {},
-                      constraints: const BoxConstraints.tightFor(
-                        width: 36,
-                        height: 36,
+                  top: 12,
+                  right: 12,
+                  child: GestureDetector(
+                    onTap: onFavoritePressed,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 5,
+                          ),
+                        ],
                       ),
-                      padding: EdgeInsets.zero,
-                      iconSize: 20,
+                      child: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? Colors.red : Colors.grey,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
-
-            // Property Details
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Name and Rating
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -153,7 +145,7 @@ class PropertyCard extends StatelessWidget {
                       ),
                       Row(
                         children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 16),
+                          const Icon(Icons.star, color: Colors.amber, size: 18),
                           const SizedBox(width: 4),
                           Text(
                             rating.toString(),
@@ -162,110 +154,46 @@ class PropertyCard extends StatelessWidget {
                               fontSize: 14,
                             ),
                           ),
-                          Text(
-                            ' ($reviews)',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
-                          ),
                         ],
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-
-                  // Location
                   Text(
-                    location,
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    address,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
-
-                  // Price
                   Row(
                     children: [
                       Text(
-                        '\$${price.toStringAsFixed(0)}',
+                        "\$${price.toStringAsFixed(0)}",
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: Colors.blue,
                         ),
                       ),
                       Text(
-                        isNight ? '/night' : '',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        isRent ? "/night" : "",
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
-
-                  // Management buttons (List/Delist)
-                  if (isManagementView)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Row(
-                        children: [
-                          if (onList != null)
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: onList,
-                                style: ElevatedButton.styleFrom(
-                                  foregroundColor: Colors.white,
-                                  backgroundColor: Colors.black,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 10,
-                                  ),
-                                ),
-                                child: const Text('List / Update'),
-                              ),
-                            ),
-                          const SizedBox(width: 8),
-                          if (onDelist != null)
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: onDelist,
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.black,
-                                  side: const BorderSide(color: Colors.black),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 10,
-                                  ),
-                                ),
-                                child: const Text('Delist'),
-                              ),
-                            ),
-                        ],
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildFeatureItem(Icons.bed, "$bedrooms Bedroom"),
+                      _buildFeatureItem(
+                        Icons.bathtub_outlined,
+                        "$bathrooms Bathroom",
                       ),
-                    ),
-
-                  // Feature pills (for home view)
-                  if (!isManagementView)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Row(
-                        children: [
-                          _buildFeaturePill(
-                            Icons.bedroom_parent_outlined,
-                            'Bedrooms',
-                          ),
-                          const SizedBox(width: 8),
-                          _buildFeaturePill(Icons.bathtub_outlined, 'Bathroom'),
-                          const SizedBox(width: 8),
-                          _buildFeaturePill(
-                            Icons.crop_square_outlined,
-                            'Square Feet',
-                          ),
-                        ],
-                      ),
-                    ),
+                      _buildFeatureItem(Icons.crop_square, "$squareFeet sq ft"),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -275,25 +203,19 @@ class PropertyCard extends StatelessWidget {
     );
   }
 
-  Widget _buildFeaturePill(IconData icon, String label) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 16, color: Colors.grey[600]),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
-        ),
+  Widget _buildFeatureItem(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: Colors.grey[600]),
+          const SizedBox(width: 4),
+          Text(text, style: TextStyle(fontSize: 12, color: Colors.grey[800])),
+        ],
       ),
     );
   }
