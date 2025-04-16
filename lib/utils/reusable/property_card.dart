@@ -18,7 +18,7 @@ class PropertyCard extends StatelessWidget {
   final VoidCallback? onDelist;
 
   const PropertyCard({
-    Key? key,
+    super.key,
     required this.imageUrl,
     required this.propertyName,
     required this.location,
@@ -31,7 +31,7 @@ class PropertyCard extends StatelessWidget {
     this.onTap,
     this.onList,
     this.onDelist,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
