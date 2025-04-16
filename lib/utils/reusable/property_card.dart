@@ -17,7 +17,7 @@ class PropertyCard extends StatelessWidget {
   final Function()? onCardPressed;
 
   const PropertyCard({
-    Key? key,
+    super.key, // Changed to super parameter
     required this.id,
     required this.propertyName,
     required this.address,
@@ -31,7 +31,7 @@ class PropertyCard extends StatelessWidget {
     this.isFavorite = false,
     this.onFavoritePressed,
     this.onCardPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +44,9 @@ class PropertyCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withAlpha(
+                13,
+              ), // Changed from withOpacity(0.05) to withAlpha(13)
               blurRadius: 10,
               offset: const Offset(0, 5),
             ),
@@ -109,7 +111,9 @@ class PropertyCard extends StatelessWidget {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withAlpha(
+                              26,
+                            ), // Changed from withOpacity(0.1) to withAlpha(26)
                             blurRadius: 5,
                           ),
                         ],
