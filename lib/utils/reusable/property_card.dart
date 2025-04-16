@@ -1,4 +1,3 @@
-dart
 // lib/utils/reusables/property_card.dart
 import 'package:flutter/material.dart';
 
@@ -119,7 +118,8 @@ class PropertyCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: Icon(isFavorite ? Icons.favorite : Icons.favorite_border,
+                      child: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
                         color: isFavorite ? Colors.red : Colors.grey,
                         size: 20,
                       ),
@@ -224,4 +224,3 @@ class PropertyCard extends StatelessWidget {
     );
   }
 }
-
