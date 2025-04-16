@@ -69,3 +69,42 @@ class _FavoritesPageState extends State<FavoritesPage> {
       }
     }
   }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Favorites')),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _favorites.isEmpty
+              ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.favorite_border,
+                      size: 64,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No favorites yet',
+                      style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Browse Properties'),
+                    ),
+                  ],
+                ),
+              )
+              : RefreshIndicator(
+                onRefresh: _loadFavorites,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _favorites.length,
+                  itemBuilder: (context, index) {
+                    final property = _favorites[index];
