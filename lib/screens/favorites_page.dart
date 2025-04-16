@@ -219,3 +219,83 @@ class _FavoritesPageState extends State<FavoritesPage> {
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
                       vertical: 4,
+                       ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      isRent ? 'For Rent' : 'For Sale',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    propertyName,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(address, style: TextStyle(color: Colors.grey[600])),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 18, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text(rating.toString()),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    isRent
+                        ? '\$${price.toStringAsFixed(0)}/month'
+                        : '\$${price.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _buildFeature(Icons.bed, '$bedrooms Beds'),
+                      const SizedBox(width: 16),
+                      _buildFeature(Icons.bathtub, '$bathrooms Baths'),
+                      const SizedBox(width: 16),
+                      _buildFeature(
+                        Icons.square_foot,
+                        squareFeet.toStringAsFixed(0),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeature(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey[600]),
+        const SizedBox(width: 4),
+        Text(text, style: TextStyle(color: Colors.grey[600])),
+      ],
+    );
+  }
+}
