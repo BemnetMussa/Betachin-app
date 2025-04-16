@@ -83,7 +83,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   children: [
                     const Icon(
                       Icons.favorite_border,
-                      size: 63,
+                      size: 64,
                       color: Colors.grey,
                     ),
                     const SizedBox(height: 16),
