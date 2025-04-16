@@ -108,3 +108,114 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   itemCount: _favorites.length,
                   itemBuilder: (context, index) {
                     final property = _favorites[index];
+                     return _buildPropertyCard(
+                      id: property.id,
+                      propertyName: property.propertyName,
+                      address: "${property.address}, ${property.city}",
+                      rating: property.rating,
+                      price: property.price,
+                      isRent: property.listingType == 'rent',
+                      imageUrl: property.primaryImageUrl,
+                      bedrooms: property.bedrooms,
+                      bathrooms: property.bathrooms,
+                      squareFeet: property.squareFeet,
+                      isFavorite: true,
+                      onFavoritePressed: () => _toggleFavorite(property.id),
+                      onCardPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/property_detail',
+                          arguments: property.id,
+                        ).then((_) => _loadFavorites());
+                      },
+                    );
+                  },
+                ),
+              ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 1,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Favorites',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ],
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushReplacementNamed(context, '/home');
+          } else if (index == 1) {
+            // Already on favorites page
+          } else if (index == 2) {
+            Navigator.pushReplacementNamed(context, '/profile');
+          }
+        },
+      ),
+    );
+  }
+
+  // Method to build property card if the import is not available
+  Widget _buildPropertyCard({
+    required int id,
+    required String propertyName,
+    required String address,
+    required num rating, // Change from double to num
+    required double price,
+    required bool isRent,
+    required String imageUrl,
+    required int bedrooms,
+    required int bathrooms,
+    required int squareFeet,
+    required bool isFavorite,
+    required VoidCallback onFavoritePressed,
+    required VoidCallback onCardPressed,
+  }) {
+    return GestureDetector(
+      onTap: onCardPressed,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 16),
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                  child: Image.network(
+                    imageUrl,
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 180,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.error),
+                      );
+                    },
+                  ),
+                ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: IconButton(
+                    icon: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: isFavorite ? Colors.red : Colors.white,
+                    ),
+                    onPressed: onFavoritePressed,
+                  ),
+                ),
+                Positioned(
+                  bottom: 10,
+                  left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
