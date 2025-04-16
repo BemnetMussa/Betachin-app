@@ -53,3 +53,19 @@ class _FavoritesPageState extends State<FavoritesPage> {
       }
     }
   }
+  Future<void> _toggleFavorite(int propertyId) async {
+    try {
+      await _supabaseService.toggleFavorite(propertyId);
+      if (mounted) {
+        setState(() {
+          _favorites.removeWhere((property) => property.id == propertyId);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      }
+    }
+  }
