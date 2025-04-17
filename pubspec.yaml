@@ -38,6 +38,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   logger: ^2.4.0  # Add this line (use the latest version)
   flutter_dotenv: ^5.0.2  # Add this line (use the latest version)
+  image_picker: ^1.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
