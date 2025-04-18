@@ -401,3 +401,13 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
               ),
     );
   }
+  Widget _buildFeatureItem(IconData icon, String text) {
+    return Column(
+      children: [
+        Icon(icon, size: 24, color: Colors.blue),
+        const SizedBox(height: 4),
+        Text(text, style: TextStyle(fontSize: 14, color: Colors.grey[800])),
+      ],
+    );
+  }
+}
