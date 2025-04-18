@@ -228,4 +228,49 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: property.isActive 
+                                    ? Colors.green
+                                    : Colors.grey,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                property.isActive ? 'Active' : 'Inactive',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 10,
+                            left: 10,
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.more_vert,
+                                color: Colors.white,
+                              ),
+                              onPressed: () => _showPropertyOptions(property),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, '/add_property')
+              .then((_) => _loadProperties());
+        },
+        tooltip: 'Add Property',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
 
