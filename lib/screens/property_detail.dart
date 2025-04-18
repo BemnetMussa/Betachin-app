@@ -222,3 +222,182 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
                                     padding: const EdgeInsets.all(8),
                                     decoration: const BoxDecoration(
                                       color: Colors.white,
+                                        shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      _property!.rating.toString(),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    actions: [
+                      IconButton(
+                        icon: Icon(
+                          _isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: _isFavorite ? Colors.red : Colors.white,
+                        ),
+                        onPressed: _toggleFavorite,
+                      ),
+                      if (_isOwner)
+                        PopupMenuButton(
+                          icon: const Icon(
+                            Icons.more_vert,
+                            color: Colors.white,
+                          ),
+                          itemBuilder:
+                              (context) => [
+                                PopupMenuItem(
+                                  value: 'edit',
+                                  child: const Text('Edit'),
+                                  onTap: () {
+                                    // Use a separate method to navigate after the menu closes
+                                    Future.delayed(
+                                      const Duration(milliseconds: 10),
+                                      _navigateToEditProperty,
+                                    );
+                                  },
+                                ),
+                                PopupMenuItem(
+                                  value:
+                                      _property!.isActive ? 'delist' : 'list',
+                                  onTap: _toggleListing,
+                                  child: Text(
+                                    _property!.isActive ? 'Delist' : 'List',
+                                  ),
+                                ),
+                              ],
+                        ),
+                    ],
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _property!.propertyName,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '\$${_property!.price.toStringAsFixed(0)}${_property!.listingType == 'rent' ? '/night' : ''}',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${_property!.address}, ${_property!.city}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          if (_property!.floor != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Floor: ${_property!.floor}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildFeatureItem(
+                                Icons.bed,
+                                '${_property!.bedrooms} ${_property!.bedrooms > 1 ? 'Bedrooms' : 'Bedroom'}',
+                              ),
+                              _buildFeatureItem(
+                                Icons.bathtub_outlined,
+                                '${_property!.bathrooms} ${_property!.bathrooms > 1 ? 'Bathrooms' : 'Bathroom'}',
+                              ),
+                              _buildFeatureItem(
+                                Icons.crop_square,
+                                '${_property!.squareFeet} sq ft',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Description',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _property!.description,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[800],
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Property Type',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _property!.type,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          if (!_isOwner)
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(double.infinity, 50),
+                              ),
+                              onPressed: () {
+                                // Contact owner logic
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Contact request sent to owner',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: const Text('Contact Owner'),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+    );
+  }
