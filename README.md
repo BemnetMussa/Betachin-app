@@ -18,9 +18,9 @@
 ## 📱 Tech Stack
 
 - **Frontend**: Flutter  
-- **Backend**: suparbase  
-- **Database**: postgres
-- **Authentication**: Suparbase
+- **Backend**: supabase  
+- **Database**: PostgreSQL in supabase
+- **Authentication**: Supabase
   
 
 ---
