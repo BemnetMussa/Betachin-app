@@ -127,3 +127,105 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
           actions: [
             TextButton(
               onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('CANCEL'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                try {
+                  await _supabaseService.deleteProperty(property.id);
+                  
+                  if (!mounted) return; // Check if widget is still mounted
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Property deleted successfully')),
+                  );
+                  
+                  _loadProperties();
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: ${e.toString()}')),
+                  );
+                }
+              },
+              child: const Text('DELETE', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Properties'),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _properties.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.home_work, size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      Text(
+                        'You have no properties',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/add_property')
+                              .then((_) => _loadProperties());
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Property'),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadProperties,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _properties.length,
+                    itemBuilder: (context, index) {
+                      final property = _properties[index];
+                      
+                      return Stack(
+                        children: [
+                          PropertyCard(
+                            id: property.id,
+                            propertyName: property.propertyName,
+                            address: "${property.address}, ${property.city}",
+                            rating: property.rating,
+                            price: property.price,
+                            isRent: property.listingType == 'rent',
+                            imageUrl: property.primaryImageUrl,
+                            bedrooms: property.bedrooms,
+                            bathrooms: property.bathrooms,
+                            squareFeet: property.squareFeet,
+                            isFavorite: false,
+                            onCardPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/property_detail',
+                                arguments: property.id,
+                              ).then((_) => _loadProperties());
+                            },
+                          ),
+                          Positioned(
+                            top: 10,
+                            right: 10,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+
