@@ -1,3 +1,4 @@
+// lib/screens/property_detail.dart
 import 'package:flutter/material.dart';
 import '../models/property_model.dart';
 import '../services/supabase_service.dart';
@@ -140,6 +141,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
       ).then((_) => _loadPropertyData());
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -222,7 +224,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
                                     padding: const EdgeInsets.all(8),
                                     decoration: const BoxDecoration(
                                       color: Colors.white,
-                                        shape: BoxShape.circle,
+                                      shape: BoxShape.circle,
                                     ),
                                     child: Text(
                                       _property!.rating.toString(),
@@ -401,14 +403,15 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
               ),
     );
   }
+
   Widget _buildFeatureItem(IconData icon, String text) {
     return Column(
       children: [
         Icon(icon, size: 24, color: Colors.blue),
         const SizedBox(height: 4),
-        Text(text, style: TextStyle(fontSize: 14, color: Colors.grey[800])),
+        Text(text, style: TextStyle(fontSize: 14, color: Colors.
+        grey[800])),
       ],
     );
   }
 }
-//property_detail page

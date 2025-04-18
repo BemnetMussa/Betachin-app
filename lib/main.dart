@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_page.dart';
 import 'signup_page.dart';
-import 'home_page.dart';
+import 'screens/home_page.dart';
 
 // Make main async to wait for Supabase initialization
 Future<void> main() async {
@@ -62,7 +62,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignupPage(),
-        '/home': (context) =>  HomePage(),
+        '/home': (context) => HomePage(),
       },
     );
   }

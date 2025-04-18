@@ -2,9 +2,11 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/property_model.dart';
+import 'package:logging/logging.dart'; // Add this import for logging
 
 class SupabaseService {
   final SupabaseClient supabase;
+  final _logger = Logger('SupabaseService');
 
   SupabaseService({required this.supabase});
 
@@ -89,7 +91,7 @@ class SupabaseService {
 
       return properties;
     } catch (e) {
-      throw e;
+      rethrow; // Fixed: Use rethrow instead of throw e
     }
   }
 
@@ -105,6 +107,89 @@ class SupabaseService {
           .where((property) => property.userId == userId)
           .toList();
     });
+  }
+
+  // Get favorite properties
+  Future<List<PropertyModel>> getFavoriteProperties() async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      // Get favorite IDs first
+      final favoriteIds = await getUserFavorites();
+
+      // If no favorites, return empty list early
+      if (favoriteIds.isEmpty) {
+        return [];
+      }
+
+      // Get all properties that match the favorite IDs
+      var query = supabase
+          .from('properties')
+          .select('''
+          *,
+          property_images!inner(image_url)
+        ''')
+          .eq('is_active', true)
+          .in_('id', favoriteIds);
+
+      final response = await query;
+      final List<dynamic> data = response;
+
+      // Process the data to format it correctly for our model
+      List<PropertyModel> properties = [];
+
+      // Group data by property id
+      Map<int, Map<String, dynamic>> propertyMap = {};
+      Map<int, List<String>> propertyImages = {};
+
+      for (var item in data) {
+        final propertyId = item['id'];
+        if (!propertyMap.containsKey(propertyId)) {
+          propertyMap[propertyId] = {
+            'id': propertyId,
+            'user_id': item['user_id'],
+            'property_name': item['property_name'],
+            'address': item['address'],
+            'floor': item['floor'],
+            'city': item['city'],
+            'bath_rooms': item['bath_rooms'],
+            'bed_rooms': item['bed_rooms'],
+            'square_feet': item['square_feet'],
+            'price': item['price'],
+            'description': item['description'],
+            'type': item['type'],
+            'listing_type': item['listing_type'],
+            'rating': item['rating'],
+            'created_at': item['created_at'],
+            'is_active': item['is_active'],
+          };
+          propertyImages[propertyId] = [];
+        }
+
+        if (item['property_images'] != null) {
+          propertyImages[propertyId]!.add(item['property_images']['image_url']);
+        }
+      }
+
+      // Convert to PropertyModel objects
+      for (var propertyId in propertyMap.keys) {
+        final Map<String, dynamic> property = propertyMap[propertyId]!;
+        property['image_urls'] = propertyImages[propertyId] ?? [];
+        property['primary_image_url'] =
+            propertyImages[propertyId]?.isNotEmpty == true
+                ? propertyImages[propertyId]![0]
+                : '';
+
+        properties.add(PropertyModel.fromJson(property));
+      }
+
+      return properties;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   // Add a property
@@ -197,24 +282,26 @@ class SupabaseService {
         primaryImageUrl: imageUrls.isNotEmpty ? imageUrls[0] : '',
       );
     } catch (e) {
-      throw e;
+      rethrow; // Fixed: Use rethrow instead of throw e
     }
   }
 
-  // Update a property
+  // Update a property - MERGED IMPLEMENTATION
   Future<void> updateProperty({
     required int propertyId,
-    String? propertyName,
-    String? address,
+    required String propertyName,
+    required String address,
     String? floor,
-    String? city,
-    int? bathrooms,
-    int? bedrooms,
-    int? squareFeet,
-    double? price,
-    String? description,
-    String? type,
-    String? listingType,
+    required String city,
+    required int bathrooms,
+    required int bedrooms,
+    required int squareFeet,
+    required double price,
+    required String description,
+    required String type,
+    required String listingType,
+    List<File>? newImages,
+    List<String>? imagesToDelete,
   }) async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) {
@@ -230,24 +317,88 @@ class SupabaseService {
           .eq('user_id', userId)
           .single();
 
-      Map<String, dynamic> updates = {};
-      if (propertyName != null) updates['property_name'] = propertyName;
-      if (address != null) updates['address'] = address;
-      if (floor != null) updates['floor'] = floor;
-      if (city != null) updates['city'] = city;
-      if (bathrooms != null) updates['bath_rooms'] = bathrooms;
-      if (bedrooms != null) updates['bed_rooms'] = bedrooms;
-      if (squareFeet != null) updates['square_feet'] = squareFeet;
-      if (price != null) updates['price'] = price;
-      if (description != null) updates['description'] = description;
-      if (type != null) updates['type'] = type;
-      if (listingType != null) updates['listing_type'] = listingType;
+      // Handle image deletions if provided
+      if (imagesToDelete != null && imagesToDelete.isNotEmpty) {
+        for (final imageUrl in imagesToDelete) {
+          // Extract the image path from the URL
+          final imagePath = imageUrl.split('/').last;
 
-      if (updates.isNotEmpty) {
-        await supabase.from('properties').update(updates).eq('id', propertyId);
+          // Delete from storage
+          try {
+            await supabase.storage.from('properties').remove([
+              '$propertyId/$imagePath',
+            ]);
+          } catch (e) {
+            _logger.warning('Failed to delete image from storage: $e');
+          }
+        }
       }
+
+      // Handle new image uploads if provided
+      List<String> newImageUrls = [];
+      if (newImages != null && newImages.isNotEmpty) {
+        for (final image in newImages) {
+          final fileName =
+              '${DateTime.now().millisecondsSinceEpoch}_${image.path.split('/').last}';
+
+          // Upload to storage
+          await supabase.storage
+              .from('properties')
+              .upload('$propertyId/$fileName', image);
+
+          // Get public URL
+          final imageUrl = supabase.storage
+              .from('properties')
+              .getPublicUrl('$propertyId/$fileName');
+
+          newImageUrls.add(imageUrl);
+        }
+      }
+
+      // If we're handling images, update the image URLs in the database
+      if ((newImages != null && newImages.isNotEmpty) ||
+          (imagesToDelete != null && imagesToDelete.isNotEmpty)) {
+        // Get current property data to update image URLs correctly
+        final currentProperty =
+            await supabase
+                .from('properties')
+                .select('image_urls')
+                .eq('id', propertyId)
+                .single();
+
+        // Create updated image URLs array
+        List<String> currentImageUrls = List<String>.from(
+          currentProperty['image_urls'] ?? [],
+        );
+
+        // Remove deleted images if any
+        if (imagesToDelete != null && imagesToDelete.isNotEmpty) {
+          currentImageUrls.removeWhere((url) => imagesToDelete.contains(url));
+        }
+
+        // Add new images if any
+        currentImageUrls.addAll(newImageUrls);
+      }
+
+      // Update the property data
+      Map<String, dynamic> updates = {
+        'property_name': propertyName,
+        'address': address,
+        'floor': floor,
+        'city': city,
+        'bath_rooms': bathrooms,
+        'bed_rooms': bedrooms,
+        'square_feet': squareFeet,
+        'price': price,
+        'description': description,
+        'type': type,
+        'listing_type': listingType,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      await supabase.from('properties').update(updates).eq('id', propertyId);
     } catch (e) {
-      throw Exception('Property not found or you don\'t have permission');
+      throw Exception('Failed to update property: $e');
     }
   }
 
@@ -265,7 +416,7 @@ class SupabaseService {
           .eq('id', propertyId)
           .eq('user_id', userId);
     } catch (e) {
-      throw e;
+      rethrow; // Fixed: Use rethrow instead of throw e
     }
   }
 
@@ -295,8 +446,9 @@ class SupabaseService {
         ]);
       } catch (e) {
         // Continue even if storage deletion fails
-        // Using logger instead of print for production code
-        print('Failed to delete storage files: $e');
+        _logger.warning(
+          'Failed to delete storage files: $e',
+        ); // Fixed: Use logger instead of print
       }
     } catch (e) {
       throw Exception('Property not found or you don\'t have permission');
@@ -333,7 +485,7 @@ class SupabaseService {
             .eq('user_id', userId);
       }
     } catch (e) {
-      throw e;
+      rethrow; // Fixed: Use rethrow instead of throw e
     }
   }
 
@@ -353,7 +505,7 @@ class SupabaseService {
       final List<dynamic> data = response;
       return data.map<int>((item) => item['property_id'] as int).toList();
     } catch (e) {
-      throw e;
+      rethrow; // Fixed: Use rethrow instead of throw e
     }
   }
 }
