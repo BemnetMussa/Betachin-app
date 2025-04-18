@@ -411,3 +411,4 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
     );
   }
 }
+//property_detail page
