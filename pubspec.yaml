@@ -39,6 +39,7 @@ dependencies:
   logger: ^2.4.0  # Add this line (use the latest version)
   logging: ^1.2.0
   image_picker: ^1.1.2
+  universal_html: ^2.2.4
 
 dev_dependencies:
   flutter_test:
