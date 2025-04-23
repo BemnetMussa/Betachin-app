@@ -1,393 +1,300 @@
+// lib/screens/home_page.dart
 import 'package:flutter/material.dart';
+import '../../models/property_model.dart';
+import '../../services/supabase_service.dart';
+// Import Supabase package
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/logger.dart'; // Import logger for better error tracking
+// We need to create these files or fix the import paths
+import '../../utils/reusable/property_card.dart';
+import 'property_detail.dart';
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  HomePageState createState() => HomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class HomePageState extends State<HomePage> {
-  String? _userEmail;
-  bool _isLoading = false;
+class _HomePageState extends State<HomePage> {
+  final SupabaseService _supabaseService = SupabaseService(
+    supabase: Supabase.instance.client,
+  );
 
-  // Initialize user data
+  List<PropertyModel> _properties = [];
+  List<int> _favoriteIds = [];
+  bool _isLoading = true;
+  bool _showRentOnly = false;
+  bool _showBuyOnly = false;
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
-    _getUserData();
+    _loadData();
   }
 
-  Future<void> _getUserData() async {
-    final supabase = Supabase.instance.client;
-    final user = supabase.auth.currentUser;
-
-    if (user != null && mounted) {
-      setState(() {
-        _userEmail = user.email;
-      });
-    }
-  }
-
-  Future<void> _signOut() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    final supabase = Supabase.instance.client;
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
     try {
-      await supabase.auth.signOut();
+      final properties = await _supabaseService.getProperties(
+        rentOnly: _showRentOnly,
+        buyOnly: _showBuyOnly,
+        searchQuery: _searchQuery,
+      );
+      final favorites = await _supabaseService.getUserFavorites();
 
-      // Check if widget is still mounted before using context
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/signup');
-      }
-    } catch (e) {
-      logger.e('Sign-out error: $e');
-
-      // Check if widget is still mounted before using context
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Sign-out failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      // Check if widget is still mounted before updating state
       if (mounted) {
         setState(() {
+          _properties = properties;
+          _favoriteIds = favorites;
           _isLoading = false;
         });
       }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading properties: ${e.toString()}')),
+        );
+      }
     }
   }
 
-  // dummy data for property listings
-  final List<Map<String, dynamic>> properties = [
-    {
-      'name': 'G+2, Real Estate',
-      'location': 'Addis Ababa, Mexico',
-      'rating': 5.0,
-      'price': 14500,
-      'bedrooms': 1,
-      'bathrooms': 2,
-      'area': 90,
-      'isAvailable': true,
-    },
-    {
-      'name': 'G+2, Real Estate',
-      'location': 'Addis Ababa, Mexico',
-      'rating': 5.0,
-      'price': 10000,
-      'bedrooms': 1,
-      'bathrooms': 2,
-      'area': 90,
-      'isAvailable': true,
-    },
-    {
-      'name': 'G+2, Real Estate',
-      'location': 'Addis Ababa, Mexico',
-      'rating': 5.0,
-      'price': 29999,
-      'bedrooms': 1,
-      'bathrooms': 2,
-      'area': 120,
-      'isAvailable': true,
-    },
-  ];
+  Future<void> _toggleFavorite(int propertyId) async {
+    try {
+      await _supabaseService.toggleFavorite(propertyId);
+      if (mounted) {
+        setState(() {
+          if (_favoriteIds.contains(propertyId)) {
+            _favoriteIds.remove(propertyId);
+          } else {
+            _favoriteIds.add(propertyId);
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'Home Page',
-          style: TextStyle(color: Colors.grey, fontSize: 16),
-        ),
-      ),
-
-      // Search bar
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                filled: true,
-                fillColor: Colors.grey[200],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
-              ),
-            ),
-          ),
-
-          // Property listings
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: properties.length,
-              itemBuilder: (context, index) {
-                return PropertyCard(property: properties[index]);
-              },
-            ),
+        title: const Text('Home Page'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              _showSearchDialog();
+            },
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.grey,
-        currentIndex: 0,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: ''),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_box_outlined),
-            label: '',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: ''),
-        ],
-      ),
-    );
-  }
-}
-
-class PropertyCard extends StatelessWidget {
-  final Map<String, dynamic> property;
-
-  const PropertyCard({super.key, required this.property});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Property image with Available tag and favorite button
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                child: Image.network(
-                  "../assets/images/property1.jpeg",
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    // Fallback gradient when image fails to load
-                    return Container(
-                      height: 180,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomLeft,
-                          end: Alignment.topRight,
-                          colors: [
-                            Colors.purple.shade400,
-                            Colors.blue.shade400,
-                          ],
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          topRight: Radius.circular(16),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              // Featured tag
-              Positioned(
-                top: 12,
-                left: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.purple.shade400,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'Featured',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                children: [
+                  // Filter chips
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
                     ),
-                  ),
-                ),
-              ),
-
-              // Available tag
-              Positioned(
-                top: 12,
-                left: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'Available',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Favorite button
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.favorite_border),
-                    color: Colors.blue,
-                    onPressed: () {},
-                    constraints: const BoxConstraints(
-                      minHeight: 36,
-                      minWidth: 36,
-                    ),
-                    iconSize: 20,
-                    padding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // Property details
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  property['name'],
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  property['location'],
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Rating
-                    Row(
+                    child: Row(
                       children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 18),
-                        const SizedBox(width: 4),
-                        Text(
-                          property['rating'].toString(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
+                        FilterChip(
+                          label: const Text('All'),
+                          selected: !_showRentOnly && !_showBuyOnly,
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() {
+                                _showRentOnly = false;
+                                _showBuyOnly = false;
+                              });
+                              _loadData();
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        FilterChip(
+                          label: const Text('For Rent'),
+                          selected: _showRentOnly,
+                          onSelected: (selected) {
+                            setState(() {
+                              _showRentOnly = selected;
+                              if (selected) {
+                                _showBuyOnly = false;
+                              }
+                            });
+                            _loadData();
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        FilterChip(
+                          label: const Text('For Sale'),
+                          selected: _showBuyOnly,
+                          onSelected: (selected) {
+                            setState(() {
+                              _showBuyOnly = selected;
+                              if (selected) {
+                                _showRentOnly = false;
+                              }
+                            });
+                            _loadData();
+                          },
                         ),
                       ],
                     ),
+                  ),
 
-                    // Price
-                    Text(
-                      '\$${property['price']}/mon',
-                      style: const TextStyle(
-                        color: Colors.blue,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                  // Properties list
+                  Expanded(
+                    child:
+                        _properties.isEmpty
+                            ? Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.home_work,
+                                    size: 64,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No properties found',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                            : RefreshIndicator(
+                              onRefresh: _loadData,
+                              child: ListView.builder(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: _properties.length,
+                                itemBuilder: (context, index) {
+                                  final property = _properties[index];
+                                  final isFavorite = _favoriteIds.contains(
+                                    property.id,
+                                  );
 
-                // Property features
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildFeatureChip(
-                      icon: Icons.king_bed_outlined,
-                      label: '${property['bedrooms']} Bedroom',
-                    ),
-                    _buildFeatureChip(
-                      icon: Icons.bathtub_outlined,
-                      label: '${property['bathrooms']} Bathroom',
-                    ),
-                    _buildFeatureChip(
-                      icon: Icons.crop_square,
-                      label: '${property['area']} square feet',
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                                  return PropertyCard(
+                                    id: property.id,
+                                    propertyName: property.propertyName,
+                                    address:
+                                        "${property.address}, ${property.city}",
+                                    rating: property.rating,
+                                    price: property.price,
+                                    isRent: property.listingType == 'rent',
+                                    imageUrl: property.primaryImageUrl,
+                                    bedrooms: property.bedrooms,
+                                    bathrooms: property.bathrooms,
+                                    squareFeet: property.squareFeet,
+                                    isFavorite: isFavorite,
+                                    onFavoritePressed:
+                                        () => _toggleFavorite(property.id),
+                                    onCardPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) => PropertyDetailPage(
+                                                propertyId: property.id,
+                                              ),
+                                        ),
+                                      ).then((_) => _loadData());
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                  ),
+                ],
+              ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(
+            context,
+            '/add_property',
+          ).then((_) => _loadData());
+        },
+        tooltip: 'Add Property',
+        child: const Icon(Icons.add),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Favorites',
           ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
+        onTap: (index) {
+          if (index == 0) {
+            // Already on home page
+          } else if (index == 1) {
+            Navigator.pushNamed(context, '/favorites');
+          } else if (index == 2) {
+            Navigator.pushNamed(context, '/profile');
+          }
+        },
       ),
     );
   }
 
-  Widget _buildFeatureChip({required IconData icon, required String label}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: Colors.grey[700]),
-          const SizedBox(width: 4),
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[800])),
-        ],
-      ),
+  void _showSearchDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        String tempQuery = _searchQuery;
+        return AlertDialog(
+          title: const Text('Search Properties'),
+          content: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Enter location, name, etc.',
+              prefixIcon: Icon(Icons.search),
+            ),
+            onChanged: (value) {
+              tempQuery = value;
+            },
+            // Remove initialValue as TextField doesn't support it
+            controller: TextEditingController(text: _searchQuery),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('CANCEL'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _searchQuery = tempQuery;
+                });
+                _loadData();
+                Navigator.pop(context);
+              },
+              child: const Text('SEARCH'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

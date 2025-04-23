@@ -5,6 +5,7 @@ import 'signup_page.dart';
 import './screens/home_page.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+
 // Make main async to wait for Supabase initialization
 Future<void> main() async {
   // Ensure Flutter is initialized before using plugins
@@ -63,7 +64,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignupPage(),
-        '/home': (context) =>  HomePage(),
+        '/home': (context) => HomePage(),
       },
     );
   }
