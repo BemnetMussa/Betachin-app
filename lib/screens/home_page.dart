@@ -4,9 +4,11 @@ import '../../models/property_model.dart';
 import '../../services/supabase_service.dart';
 // Import Supabase package
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/logger.dart'; // Import logger for better error tracking
 // We need to create these files or fix the import paths
 import '../../utils/reusable/property_card.dart';
 import 'property_detail.dart';
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
