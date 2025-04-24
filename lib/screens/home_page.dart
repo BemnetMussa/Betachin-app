@@ -190,3 +190,36 @@ Widget _buildHomeContent() {
                 if (!property.isActive) {
                   return const SizedBox.shrink();
                 }
+                     id: property.id,
+                  propertyName: property.propertyName,
+                  address: "${property.address}, ${property.city}",
+                  rating: property.rating,
+                  price: property.price,
+                  isRent: property.listingType == 'rent',
+                  imageUrl: property.primaryImageUrl,
+                  bedrooms: property.bedrooms,
+                  bathrooms: property.bathrooms,
+                  squareFeet: property.squareFeet,
+                  isFavorite: true,
+                  onFavoritePressed: () {
+                    _toggleFavorite(property.id);
+                    setState(() {}); // Refresh to update UI
+                  },
+                  onCardPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PropertyDetailPage(
+                          propertyId: property.id,
+                        ),
+                      ),
+                    ).then((_) => setState(() {})); // Refresh after return
+                  },
+                );
+              },
+            ),
+          );
+        }
+      },
+    );
+  }
