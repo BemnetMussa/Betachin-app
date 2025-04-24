@@ -244,4 +244,58 @@ Widget _buildHomeContent() {
       );
     }
   }
+ @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: _currentIndex == 0
+            ? Expanded(
+                child: TextField(
+                  decoration: const InputDecoration(
+                    hintText: 'Search properties...',
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  onChanged: (value) {
+                    setState(() => _searchQuery = value);
+                  },
+                  onSubmitted: (_) => _loadData(),
+                ),
+              )
+            : Text(_currentIndex == 1
+                ? 'Favorites'
+                : _currentIndex == 2
+                    ? 'My Properties'
+                    : 'Profile'),
+        actions: [
+          if (_currentIndex == 0)
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: _loadData, // Just trigger search with current query
+            ),
+          TextButton(
+            onPressed: _logout,
+            child: const Text('Logout'),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: _getBody(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        type: BottomNavigationBarType.fixed, // Important for 4+ items
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.favorite), label: 'Favorites'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.add_home), label: 'My Properties'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ],
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
 
