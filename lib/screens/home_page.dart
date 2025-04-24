@@ -87,3 +87,21 @@ Widget _buildHomeContent() {
                   ],
                 ),
               ),
+
+                  Expanded(
+                child: _properties.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.home_work,
+                                size: 64, color: Colors.grey),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No properties found',
+                              style: TextStyle(
+                                  fontSize: 18, color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      )
