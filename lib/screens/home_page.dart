@@ -105,3 +105,47 @@ Widget _buildHomeContent() {
                           ],
                         ),
                       )
+                       : RefreshIndicator(
+                        onRefresh: _loadData,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _properties.length,
+                          itemBuilder: (context, index) {
+                            final property = _properties[index];
+                            // Only show active properties in the home page
+                            if (!property.isActive) {
+                              return const SizedBox.shrink();
+                            }
+                            final isFavorite =
+                                _favoriteIds.contains(property.id);
+                            return PropertyCard(
+                              id: property.id,
+                              propertyName: property.propertyName,
+                              address: "${property.address}, ${property.city}",
+                              rating: property.rating,
+                              price: property.price,
+                              isRent: property.listingType == 'rent',
+                              imageUrl: property.primaryImageUrl,
+                              bedrooms: property.bedrooms,
+                                bathrooms: property.bathrooms,
+                              squareFeet: property.squareFeet,
+                              isFavorite: isFavorite,
+                              onFavoritePressed: () =>
+                                  _toggleFavorite(property.id),
+                              onCardPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => PropertyDetailPage(
+                                      propertyId: property.id,
+                                    ),
+                                  ),
+                                ).then((_) => _loadData());
+                              },
+                            );
+                          },
+                        ),
+                      ),
+              ),
+            ],
+          );
