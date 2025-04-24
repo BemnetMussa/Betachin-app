@@ -298,4 +298,24 @@ Widget _buildHomeContent() {
           });
         },
       ),
+        floatingActionButton: _currentIndex == 0
+          ? null
+          : _currentIndex == 2
+              ? FloatingActionButton(
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/add_property',
+                    ).then((_) {
+                      // Refresh both My Properties and Home data
+                      _loadData();
+                      setState(() {});
+                    });
+                  },
+                  tooltip: 'Add Property',
+                  child: const Icon(Icons.add),
+                )
+              : null,
+    );
+  }
 
