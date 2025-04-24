@@ -32,3 +32,27 @@ Future<void> _toggleFavorite(int propertyId) async {
         return _buildHomeContent();
     }
   }
+Widget _buildHomeContent() {
+    return _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : Column(
+            children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    FilterChip(
+                      label: const Text('All'),
+                      selected: !_showRentOnly && !_showBuyOnly,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() {
+                            _showRentOnly = false;
+                            _showBuyOnly = false;
+                          });
+                          _loadData();
+                        }
+                      },
+                    ),
