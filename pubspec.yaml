@@ -3,10 +3,8 @@ description: "A new Flutter project."
 publish_to: 'none'
 
 version: 1.0.0+1
-
 environment:
   sdk: '>=3.5.0 <4.0.0'  # Adjusted to match Flutter 3.29.2 (Dart 3.5.x)
-
 dependencies:
   flutter:
     sdk: flutter
@@ -15,10 +13,10 @@ dependencies:
   webview_flutter: ^4.11.0
   cupertino_icons: ^1.0.8
   logger: ^2.4.0
+  flutter_dotenv: ^5.0.2
   logging: ^1.2.0
-  image_picker: ^1.1.2  # Valid version
+  image_picker: ^1.1.2
   universal_html: ^2.2.4
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

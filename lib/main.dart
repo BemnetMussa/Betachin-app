@@ -36,7 +36,7 @@ class AuthWidgetBuilder extends StatelessWidget {
 
         final state = snapshot.data;
         if (state == null) {
-          return const SignupPage(); // Changed to SignupPage
+          return const LoginPage(); // Fallback if no auth state
         }
 
         return builder(context, state);
@@ -57,10 +57,10 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      initialRoute: '/signup', // Change this to signup
+      initialRoute: '/',
       routes: {
-        '/': (context) => const SignupPage(), // Change default route to signup
-        '/home': (context) => const HomePage(),
+        '/': (context) => const SignupPage(),
+        '/home': (context) => const HomePage(), // Add explicit /home route
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignupPage(),
         '/add_property': (context) => const AddPropertyPage(),
@@ -78,7 +78,7 @@ class MyApp extends StatelessWidget {
         return AuthWidgetBuilder(
           builder: (context, state) {
             if (state.session == null) {
-              return const SignupPage(); // Change this to SignupPage
+              return const LoginPage();
             }
             return child!;
           },
