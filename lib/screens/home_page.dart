@@ -1,4 +1,66 @@
-Future<void> _toggleFavorite(int propertyId) async {
+// ignore_for_file: use_build_context_synchronously
+
+import 'package:flutter/material.dart';
+import '../../models/property_model.dart';
+import '../../services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../utils/reusable/property_card.dart';
+import 'property_detail.dart';
+import 'my_properties_page.dart';
+import 'profile_page.dart'; // Import the new profile page
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final SupabaseService _supabaseService = SupabaseService(
+    supabase: Supabase.instance.client,
+  );
+  List<PropertyModel> _properties = [];
+  List<int> _favoriteIds = [];
+  bool _isLoading = true;
+  bool _showRentOnly = false;
+  bool _showBuyOnly = false;
+  String _searchQuery = '';
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    try {
+      final properties = await _supabaseService.getProperties(
+        rentOnly: _showRentOnly,
+        buyOnly: _showBuyOnly,
+        searchQuery: _searchQuery,
+      );
+      final favorites = await _supabaseService.getUserFavorites();
+      if (mounted) {
+        setState(() {
+          _properties = properties;
+          _favoriteIds = favorites;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading properties: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleFavorite(int propertyId) async {
     try {
       await _supabaseService.toggleFavorite(propertyId);
       if (mounted) {
@@ -18,7 +80,8 @@ Future<void> _toggleFavorite(int propertyId) async {
       }
     }
   }
- Widget _getBody() {
+
+  Widget _getBody() {
     switch (_currentIndex) {
       case 0:
         return _buildHomeContent();
@@ -32,7 +95,8 @@ Future<void> _toggleFavorite(int propertyId) async {
         return _buildHomeContent();
     }
   }
-Widget _buildHomeContent() {
+
+  Widget _buildHomeContent() {
     return _isLoading
         ? const Center(child: CircularProgressIndicator())
         : Column(
@@ -56,7 +120,7 @@ Widget _buildHomeContent() {
                         }
                       },
                     ),
-                      const SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     FilterChip(
                       label: const Text('For Rent'),
                       selected: _showRentOnly,
@@ -87,8 +151,7 @@ Widget _buildHomeContent() {
                   ],
                 ),
               ),
-
-                  Expanded(
+              Expanded(
                 child: _properties.isEmpty
                     ? Center(
                         child: Column(
@@ -105,7 +168,7 @@ Widget _buildHomeContent() {
                           ],
                         ),
                       )
-                       : RefreshIndicator(
+                    : RefreshIndicator(
                         onRefresh: _loadData,
                         child: ListView.builder(
                           padding: const EdgeInsets.all(16),
@@ -127,7 +190,7 @@ Widget _buildHomeContent() {
                               isRent: property.listingType == 'rent',
                               imageUrl: property.primaryImageUrl,
                               bedrooms: property.bedrooms,
-                                bathrooms: property.bathrooms,
+                              bathrooms: property.bathrooms,
                               squareFeet: property.squareFeet,
                               isFavorite: isFavorite,
                               onFavoritePressed: () =>
@@ -149,7 +212,7 @@ Widget _buildHomeContent() {
               ),
             ],
           );
-}
+  }
 
   Widget _buildFavoritesContent() {
     return FutureBuilder<List<PropertyModel>>(
@@ -190,7 +253,8 @@ Widget _buildHomeContent() {
                 if (!property.isActive) {
                   return const SizedBox.shrink();
                 }
-                     id: property.id,
+                return PropertyCard(
+                  id: property.id,
                   propertyName: property.propertyName,
                   address: "${property.address}, ${property.city}",
                   rating: property.rating,
@@ -223,13 +287,15 @@ Widget _buildHomeContent() {
       },
     );
   }
- Future<void> _logout() async {
+
+  Future<void> _logout() async {
     // Store the context before the async operation
     final navigatorContext = context;
 
     try {
       await Supabase.instance.client.auth.signOut();
- // Check if the widget is still mounted before using BuildContext
+
+      // Check if the widget is still mounted before using BuildContext
       if (!mounted) return;
 
       // Now it's safe to use the stored context after checking mounted
@@ -244,7 +310,8 @@ Widget _buildHomeContent() {
       );
     }
   }
- @override
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -298,7 +365,7 @@ Widget _buildHomeContent() {
           });
         },
       ),
-        floatingActionButton: _currentIndex == 0
+      floatingActionButton: _currentIndex == 0
           ? null
           : _currentIndex == 2
               ? FloatingActionButton(
@@ -318,7 +385,6 @@ Widget _buildHomeContent() {
               : null,
     );
   }
-
 
   void _showSearchDialog() {
     showDialog(
@@ -354,5 +420,3 @@ Widget _buildHomeContent() {
     );
   }
 }
-
-

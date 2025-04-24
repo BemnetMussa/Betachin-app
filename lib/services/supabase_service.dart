@@ -91,7 +91,9 @@ class SupabaseService {
 
       return properties;
     } catch (e) {
-      rethrow; // Fixed: Use rethrow instead of throw e
+
+      rethrow;
+
     }
   }
 
@@ -282,7 +284,9 @@ class SupabaseService {
         primaryImageUrl: imageUrls.isNotEmpty ? imageUrls[0] : '',
       );
     } catch (e) {
-      rethrow; // Fixed: Use rethrow instead of throw e
+
+      rethrow;
+
     }
   }
 
@@ -416,7 +420,9 @@ class SupabaseService {
           .eq('id', propertyId)
           .eq('user_id', userId);
     } catch (e) {
-      rethrow; // Fixed: Use rethrow instead of throw e
+
+      rethrow;
+
     }
   }
 
@@ -485,7 +491,8 @@ class SupabaseService {
             .eq('user_id', userId);
       }
     } catch (e) {
-      rethrow; // Fixed: Use rethrow instead of throw e
+      rethrow;
+
     }
   }
 
@@ -505,7 +512,8 @@ class SupabaseService {
       final List<dynamic> data = response;
       return data.map<int>((item) => item['property_id'] as int).toList();
     } catch (e) {
-      rethrow; // Fixed: Use rethrow instead of throw e
+      rethrow;
+
     }
   }
 }
