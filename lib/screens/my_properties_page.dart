@@ -171,13 +171,11 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('My Properties')),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _properties.isEmpty
-              ? Center(
+    // Removed the AppBar since it's already provided by the HomePage
+    return _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : _properties.isEmpty
+            ? Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -201,7 +199,7 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
                   ],
                 ),
               )
-              : RefreshIndicator(
+            : RefreshIndicator(
                 onRefresh: _loadProperties,
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),
@@ -240,10 +238,9 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color:
-                                  property.isActive
-                                      ? Colors.green
-                                      : Colors.grey,
+                              color: property.isActive
+                                  ? Colors.green
+                                  : Colors.grey,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -271,17 +268,6 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
                     );
                   },
                 ),
-              ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(
-            context,
-            '/add_property',
-          ).then((_) => _loadProperties());
-        },
-        tooltip: 'Add Property',
-        child: const Icon(Icons.add),
-      ),
-    );
+              );
   }
 }
