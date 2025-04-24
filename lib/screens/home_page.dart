@@ -223,3 +223,25 @@ Widget _buildHomeContent() {
       },
     );
   }
+ Future<void> _logout() async {
+    // Store the context before the async operation
+    final navigatorContext = context;
+
+    try {
+      await Supabase.instance.client.auth.signOut();
+ // Check if the widget is still mounted before using BuildContext
+      if (!mounted) return;
+
+      // Now it's safe to use the stored context after checking mounted
+      Navigator.pushReplacementNamed(navigatorContext, '/login');
+    } catch (e) {
+      // Check if the widget is still mounted before using BuildContext
+      if (!mounted) return;
+
+      // Now it's safe to use the stored context after checking mounted
+      ScaffoldMessenger.of(navigatorContext).showSnackBar(
+        SnackBar(content: Text('Logout failed: ${e.toString()}')),
+      );
+    }
+  }
+
