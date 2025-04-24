@@ -18,3 +18,17 @@ Future<void> _toggleFavorite(int propertyId) async {
       }
     }
   }
+ Widget _getBody() {
+    switch (_currentIndex) {
+      case 0:
+        return _buildHomeContent();
+      case 1:
+        return _buildFavoritesContent();
+      case 2:
+        return const MyPropertiesPage();
+      case 3:
+        return const ProfilePage(); // Add the profile page
+      default:
+        return _buildHomeContent();
+    }
+  }
