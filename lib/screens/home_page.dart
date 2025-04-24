@@ -149,3 +149,44 @@ Widget _buildHomeContent() {
               ),
             ],
           );
+}
+
+  Widget _buildFavoritesContent() {
+    return FutureBuilder<List<PropertyModel>>(
+      future: _supabaseService.getFavoriteProperties(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(
+            child: Text('Error: ${snapshot.error}'),
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.favorite_border, size: 64, color: Colors.grey),
+                const SizedBox(height: 16),
+                Text(
+                  'No favorite properties',
+                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          );
+        } else {
+          final favoriteProperties = snapshot.data!;
+          return RefreshIndicator(
+            onRefresh: () async {
+              setState(() {}); // Refresh to trigger rebuild
+            },
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: favoriteProperties.length,
+              itemBuilder: (context, index) {
+                final property = favoriteProperties[index];
+                // Only show active properties in favorites too
+                if (!property.isActive) {
+                  return const SizedBox.shrink();
+                }
