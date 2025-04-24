@@ -56,3 +56,34 @@ Widget _buildHomeContent() {
                         }
                       },
                     ),
+                      const SizedBox(width: 8),
+                    FilterChip(
+                      label: const Text('For Rent'),
+                      selected: _showRentOnly,
+                      onSelected: (selected) {
+                        setState(() {
+                          _showRentOnly = selected;
+                          if (selected) {
+                            _showBuyOnly = false;
+                          }
+                        });
+                        _loadData();
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    FilterChip(
+                      label: const Text('For Sale'),
+                      selected: _showBuyOnly,
+                      onSelected: (selected) {
+                        setState(() {
+                          _showBuyOnly = selected;
+                          if (selected) {
+                            _showRentOnly = false;
+                          }
+                        });
+                        _loadData();
+                      },
+                    ),
+                  ],
+                ),
+              ),
