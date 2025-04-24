@@ -319,3 +319,40 @@ Widget _buildHomeContent() {
     );
   }
 
+
+  void _showSearchDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        String tempQuery = _searchQuery;
+        return AlertDialog(
+          title: const Text('Search Properties'),
+          content: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Enter location, name, etc.',
+              prefixIcon: Icon(Icons.search),
+            ),
+            onChanged: (value) => tempQuery = value,
+            controller: TextEditingController(text: _searchQuery),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('CANCEL'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() => _searchQuery = tempQuery);
+                _loadData();
+                Navigator.pop(context);
+              },
+              child: const Text('SEARCH'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+
