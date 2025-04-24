@@ -40,6 +40,7 @@ dependencies:
   flutter_dotenv: ^5.0.2  # Add this lin]
   logging: ^1.2.0
   image_picker: ^1.1.2
+  universal_html: ^2.2.4
 
 dev_dependencies:
   flutter_test:
