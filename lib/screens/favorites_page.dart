@@ -1,46 +1,35 @@
-// lib/screens/favorites_page.dart
+//ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
-import '../models/property_model.dart';
-import '../services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class FavoritesPage extends StatefulWidget {
-  const FavoritesPage({super.key});
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
 
   @override
-  State<FavoritesPage> createState() => _FavoritesPageState();
+  State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _FavoritesPageState extends State<FavoritesPage> {
-  final SupabaseService _supabaseService = SupabaseService(
-    supabase: Supabase.instance.client,
-  );
-
-  List<PropertyModel> _favorites = [];
+class _ProfilePageState extends State<ProfilePage> {
+  final _supabase = Supabase.instance.client;
+  String _email = '';
+  String _userId = '';
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadFavorites();
+    _loadUserProfile();
   }
 
-  Future<void> _loadFavorites() async {
+  Future<void> _loadUserProfile() async {
     setState(() => _isLoading = true);
     try {
-      // Get favorite property IDs first
-      final favoriteIds = await _supabaseService.getUserFavorites();
-
-      // Then get all properties and filter for favorites
-      final allProperties = await _supabaseService.getProperties();
-      final favorites =
-          allProperties
-              .where((property) => favoriteIds.contains(property.id))
-              .toList();
-
-      if (mounted) {
+      final user = _supabase.auth.currentUser;
+      if (user != null) {
         setState(() {
-          _favorites = favorites;
+          _email = user.email ?? 'No email found';
+          _userId = user.id;
           _isLoading = false;
         });
       }
@@ -48,257 +37,93 @@ class _FavoritesPageState extends State<FavoritesPage> {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading favorites: ${e.toString()}')),
+          SnackBar(content: Text('Error loading profile: ${e.toString()}')),
         );
-      }
-    }
-  }
-
-  Future<void> _toggleFavorite(int propertyId) async {
-    try {
-      await _supabaseService.toggleFavorite(propertyId);
-      if (mounted) {
-        setState(() {
-          _favorites.removeWhere((property) => property.id == propertyId);
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Favorites')),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _favorites.isEmpty
-              ? Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.favorite_border,
-                      size: 64,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No favorites yet',
-                      style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text('Browse Properties'),
-                    ),
-                  ],
+    return _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.blue,
+                  child: Icon(Icons.person, size: 70, color: Colors.white),
                 ),
-              )
-              : RefreshIndicator(
-                onRefresh: _loadFavorites,
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _favorites.length,
-                  itemBuilder: (context, index) {
-                    final property = _favorites[index];
-
-                    return _buildPropertyCard(
-                      id: property.id,
-                      propertyName: property.propertyName,
-                      address: "${property.address}, ${property.city}",
-                      rating: property.rating,
-                      price: property.price,
-                      isRent: property.listingType == 'rent',
-                      imageUrl: property.primaryImageUrl,
-                      bedrooms: property.bedrooms,
-                      bathrooms: property.bathrooms,
-                      squareFeet: property.squareFeet,
-                      isFavorite: true,
-                      onFavoritePressed: () => _toggleFavorite(property.id),
-                      onCardPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          '/property_detail',
-                          arguments: property.id,
-                        ).then((_) => _loadFavorites());
-                      },
+                const SizedBox(height: 16),
+                Text(
+                  'User ID: $_userId',
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Email: $_email',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.person),
+                  title: const Text('Edit Profile'),
+                  onTap: () {
+                    // For now, just show a snackbar
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Edit profile not implemented yet')),
                     );
                   },
                 ),
-              ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: 'Favorites',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushReplacementNamed(context, '/home');
-          } else if (index == 1) {
-            // Already on favorites page
-          } else if (index == 2) {
-            Navigator.pushReplacementNamed(context, '/profile');
-          }
-        },
-      ),
-    );
-  }
-
-  // Method to build property card if the import is not available
-  Widget _buildPropertyCard({
-    required int id,
-    required String propertyName,
-    required String address,
-    required num rating, // Change from double to num
-    required double price,
-    required bool isRent,
-    required String imageUrl,
-    required int bedrooms,
-    required int bathrooms,
-    required int squareFeet,
-    required bool isFavorite,
-    required VoidCallback onFavoritePressed,
-    required VoidCallback onCardPressed,
-  }) {
-    return GestureDetector(
-      onTap: onCardPressed,
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 16),
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                  child: Image.network(
-                    imageUrl,
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 180,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.error),
-                      );
-                    },
-                  ),
+                ListTile(
+                  leading: const Icon(Icons.security),
+                  title: const Text('Change Password'),
+                  onTap: () {
+                    // For now, just show a snackbar
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Change password not implemented yet')),
+                    );
+                  },
                 ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: IconButton(
-                    icon: Icon(
-                      isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: isFavorite ? Colors.red : Colors.white,
-                    ),
-                    onPressed: onFavoritePressed,
-                  ),
-                ),
-                Positioned(
-                  bottom: 10,
-                  left: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      isRent ? 'For Rent' : 'For Sale',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: const Text('Log Out'),
+                  onTap: () {
+                    _handleLogout();
+                  },
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    propertyName,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(address, style: TextStyle(color: Colors.grey[600])),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, size: 18, color: Colors.amber),
-                      const SizedBox(width: 4),
-                      Text(rating.toString()),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    isRent
-                        ? '\$${price.toStringAsFixed(0)}/month'
-                        : '\$${price.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildFeature(Icons.bed, '$bedrooms Beds'),
-                      const SizedBox(width: 16),
-                      _buildFeature(Icons.bathtub, '$bathrooms Baths'),
-                      const SizedBox(width: 16),
-                      _buildFeature(
-                        Icons.square_foot,
-                        squareFeet.toStringAsFixed(0),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+          );
   }
 
-  Widget _buildFeature(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: Colors.grey[600]),
-        const SizedBox(width: 4),
-        Text(text, style: TextStyle(color: Colors.grey[600])),
-      ],
-    );
+  // Fixed method to properly handle async operations with BuildContext
+  void _handleLogout() async {
+    // Store the context before the async operation
+    final navigatorContext = context;
+
+    try {
+      await _supabase.auth.signOut();
+
+      // After signOut completes, check if widget is still mounted
+      if (!mounted) return;
+
+      // Now it's safe to use the stored context after checking mounted
+      Navigator.pushReplacementNamed(navigatorContext, '/login');
+    } catch (e) {
+      if (!mounted) return;
+
+      // Now it's safe to use the stored context after checking mounted
+      ScaffoldMessenger.of(navigatorContext).showSnackBar(
+        SnackBar(content: Text('Logout failed: ${e.toString()}')),
+      );
+    }
   }
 }
