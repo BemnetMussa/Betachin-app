@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'utils/logger.dart'; // Import logger for better error tracking
+import 'signup_page.dart'; // Make sure this import is added
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -68,7 +69,7 @@ class LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Log In')),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -94,19 +95,22 @@ class LoginPageState extends State<LoginPage> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _isLoading ? null : _login,
-              child:
-                  _isLoading
-                      ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                      : const Text('Log In'),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Log In'),
             ),
             TextButton(
               onPressed: () {
-                // Use named route instead of direct navigation
-                Navigator.pushNamed(context, '/signup');
+                // Direct navigation to signup page with MaterialPageRoute
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SignupPage()),
+                  (route) => false, // This clears the navigation stack
+                );
               },
               child: const Text('Don\'t have an account? Sign up'),
             ),

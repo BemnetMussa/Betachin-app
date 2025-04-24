@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'utils/logger.dart'; // Import logger for better error tracking
+import 'utils/logger.dart';
+import 'login_page.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -12,12 +13,14 @@ class SignupPage extends StatefulWidget {
 class SignupPageState extends State<SignupPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -29,9 +32,9 @@ class SignupPageState extends State<SignupPage> {
       return;
     }
 
-    if (_passwordController.text.length < 6) {
+    if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password must be at least 6 characters')),
+        const SnackBar(content: Text('Passwords do not match')),
       );
       return;
     }
@@ -48,16 +51,27 @@ class SignupPageState extends State<SignupPage> {
       );
 
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Registration successful! Please check your email to verify your account.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Navigate to login page
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (route) => false, // This clears the navigation stack
+        );
       }
     } catch (e) {
-      // Log the error for easier debugging
       logger.e('Signup error: $e');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Sign-up failed: ${e.toString()}'),
+            content: Text('Signup failed: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -95,26 +109,37 @@ class SignupPageState extends State<SignupPage> {
               decoration: const InputDecoration(
                 labelText: 'Password',
                 border: OutlineInputBorder(),
-                helperText: 'Password must be at least 6 characters',
+              ),
+              obscureText: true,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _confirmPasswordController,
+              decoration: const InputDecoration(
+                labelText: 'Confirm Password',
+                border: OutlineInputBorder(),
               ),
               obscureText: true,
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _isLoading ? null : _signUp,
-              child:
-                  _isLoading
-                      ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                      : const Text('Sign Up'),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Sign Up'),
             ),
             TextButton(
               onPressed: () {
-                // Use named route instead of direct navigation
-                Navigator.pushNamed(context, '/login');
+                // Direct navigation to login page with MaterialPageRoute
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                  (route) => false, // This clears the navigation stack
+                );
               },
               child: const Text('Already have an account? Log in'),
             ),
