@@ -1,13 +1,10 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import '../../models/property_model.dart';
 import '../../services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/logger.dart';
 import '../../utils/reusable/property_card.dart';
 import 'property_detail.dart';
-import 'my_properties_page.dart';
-import 'profile_page.dart'; // Import the new profile page
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,13 +17,13 @@ class _HomePageState extends State<HomePage> {
   final SupabaseService _supabaseService = SupabaseService(
     supabase: Supabase.instance.client,
   );
+
   List<PropertyModel> _properties = [];
   List<int> _favoriteIds = [];
   bool _isLoading = true;
   bool _showRentOnly = false;
   bool _showBuyOnly = false;
   String _searchQuery = '';
-  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -43,6 +40,7 @@ class _HomePageState extends State<HomePage> {
         searchQuery: _searchQuery,
       );
       final favorites = await _supabaseService.getUserFavorites();
+
       if (mounted) {
         setState(() {
           _properties = properties;
@@ -81,334 +79,192 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Widget _getBody() {
-    switch (_currentIndex) {
-      case 0:
-        return _buildHomeContent();
-      case 1:
-        return _buildFavoritesContent();
-      case 2:
-        return const MyPropertiesPage();
-      case 3:
-        return const ProfilePage(); // Add the profile page
-      default:
-        return _buildHomeContent();
-    }
-  }
-
-  Widget _buildHomeContent() {
-    return _isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : Column(
-            children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    FilterChip(
-                      label: const Text('All'),
-                      selected: !_showRentOnly && !_showBuyOnly,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _showRentOnly = false;
-                            _showBuyOnly = false;
-                          });
-                          _loadData();
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('For Rent'),
-                      selected: _showRentOnly,
-                      onSelected: (selected) {
-                        setState(() {
-                          _showRentOnly = selected;
-                          if (selected) {
-                            _showBuyOnly = false;
-                          }
-                        });
-                        _loadData();
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('For Sale'),
-                      selected: _showBuyOnly,
-                      onSelected: (selected) {
-                        setState(() {
-                          _showBuyOnly = selected;
-                          if (selected) {
-                            _showRentOnly = false;
-                          }
-                        });
-                        _loadData();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: _properties.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.home_work,
-                                size: 64, color: Colors.grey),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No properties found',
-                              style: TextStyle(
-                                  fontSize: 18, color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadData,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _properties.length,
-                          itemBuilder: (context, index) {
-                            final property = _properties[index];
-                            // Only show active properties in the home page
-                            if (!property.isActive) {
-                              return const SizedBox.shrink();
-                            }
-                            final isFavorite =
-                                _favoriteIds.contains(property.id);
-                            return PropertyCard(
-                              id: property.id,
-                              propertyName: property.propertyName,
-                              address: "${property.address}, ${property.city}",
-                              rating: property.rating,
-                              price: property.price,
-                              isRent: property.listingType == 'rent',
-                              imageUrl: property.primaryImageUrl,
-                              bedrooms: property.bedrooms,
-                              bathrooms: property.bathrooms,
-                              squareFeet: property.squareFeet,
-                              isFavorite: isFavorite,
-                              onFavoritePressed: () =>
-                                  _toggleFavorite(property.id),
-                              onCardPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => PropertyDetailPage(
-                                      propertyId: property.id,
-                                    ),
-                                  ),
-                                ).then((_) => _loadData());
-                              },
-                            );
-                          },
-                        ),
-                      ),
-              ),
-            ],
-          );
-  }
-
-  Widget _buildFavoritesContent() {
-    return FutureBuilder<List<PropertyModel>>(
-      future: _supabaseService.getFavoriteProperties(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(
-            child: Text('Error: ${snapshot.error}'),
-          );
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.favorite_border, size: 64, color: Colors.grey),
-                const SizedBox(height: 16),
-                Text(
-                  'No favorite properties',
-                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          );
-        } else {
-          final favoriteProperties = snapshot.data!;
-          return RefreshIndicator(
-            onRefresh: () async {
-              setState(() {}); // Refresh to trigger rebuild
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: favoriteProperties.length,
-              itemBuilder: (context, index) {
-                final property = favoriteProperties[index];
-                // Only show active properties in favorites too
-                if (!property.isActive) {
-                  return const SizedBox.shrink();
-                }
-                return PropertyCard(
-                  id: property.id,
-                  propertyName: property.propertyName,
-                  address: "${property.address}, ${property.city}",
-                  rating: property.rating,
-                  price: property.price,
-                  isRent: property.listingType == 'rent',
-                  imageUrl: property.primaryImageUrl,
-                  bedrooms: property.bedrooms,
-                  bathrooms: property.bathrooms,
-                  squareFeet: property.squareFeet,
-                  isFavorite: true,
-                  onFavoritePressed: () {
-                    _toggleFavorite(property.id);
-                    setState(() {}); // Refresh to update UI
-                  },
-                  onCardPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PropertyDetailPage(
-                          propertyId: property.id,
-                        ),
-                      ),
-                    ).then((_) => setState(() {})); // Refresh after return
-                  },
-                );
-              },
-            ),
-          );
-        }
-      },
-    );
-  }
-
-  Future<void> _logout() async {
-    // Store the context before the async operation
-    final navigatorContext = context;
-
-    try {
-      await Supabase.instance.client.auth.signOut();
-
-      // Check if the widget is still mounted before using BuildContext
-      if (!mounted) return;
-
-      // Now it's safe to use the stored context after checking mounted
-      Navigator.pushReplacementNamed(navigatorContext, '/login');
-    } catch (e) {
-      // Check if the widget is still mounted before using BuildContext
-      if (!mounted) return;
-
-      // Now it's safe to use the stored context after checking mounted
-      ScaffoldMessenger.of(navigatorContext).showSnackBar(
-        SnackBar(content: Text('Logout failed: ${e.toString()}')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: _currentIndex == 0
-            ? Expanded(
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Search properties...',
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  onChanged: (value) {
-                    setState(() => _searchQuery = value);
-                  },
-                  onSubmitted: (_) => _loadData(),
-                ),
-              )
-            : Text(_currentIndex == 1
-                ? 'Favorites'
-                : _currentIndex == 2
-                    ? 'My Properties'
-                    : 'Profile'),
+        title: const Text('Home Page'),
         actions: [
-          if (_currentIndex == 0)
-            IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: _loadData, // Just trigger search with current query
-            ),
-          TextButton(
-            onPressed: _logout,
-            child: const Text('Logout'),
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              _showSearchDialog();
+            },
           ),
-          const SizedBox(width: 8),
         ],
       ),
-      body: _getBody(),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                // Filter chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      FilterChip(
+                        label: const Text('All'),
+                        selected: !_showRentOnly && !_showBuyOnly,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() {
+                              _showRentOnly = false;
+                              _showBuyOnly = false;
+                            });
+                            _loadData();
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      FilterChip(
+                        label: const Text('For Rent'),
+                        selected: _showRentOnly,
+                        onSelected: (selected) {
+                          setState(() {
+                            _showRentOnly = selected;
+                            if (selected) _showBuyOnly = false;
+                          });
+                          _loadData();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      FilterChip(
+                        label: const Text('For Sale'),
+                        selected: _showBuyOnly,
+                        onSelected: (selected) {
+                          setState(() {
+                            _showBuyOnly = selected;
+                            if (selected) _showRentOnly = false;
+                          });
+                          _loadData();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Properties list
+                Expanded(
+                  child: _properties.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.home_work,
+                                size: 64,
+                                color: Color.fromARGB(255, 255, 54, 54),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No properties found',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: const Color.fromARGB(255, 255, 0, 0),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _loadData,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _properties.length,
+                            itemBuilder: (context, index) {
+                              final property = _properties[index];
+                              final isFavorite =
+                                  _favoriteIds.contains(property.id);
+                              print("Image URL: ${property.primaryImageUrl}");
+                              return PropertyCard(
+                                id: property.id,
+                                propertyName: property.propertyName,
+                                address: "${property.address}, ${property.city}",
+                                rating: property.rating,
+                                price: property.price,
+                                isRent: property.listingType == 'rent',
+                                imageUrl: property.primaryImageUrl ?? '',
+                                bedrooms: property.bedrooms,
+                                bathrooms: property.bathrooms,
+                                squareFeet: property.squareFeet,
+                                isFavorite: isFavorite,
+                                onFavoritePressed: () =>
+                                    _toggleFavorite(property.id),
+                                onCardPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PropertyDetailPage(
+                                        propertyId: property.id,
+                                      ),
+                                    ),
+                                  ).then((_) => _loadData());
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                ),
+              ],
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, '/add_property').then((_) => _loadData());
+        },
+        tooltip: 'Add Property',
+        child: const Icon(Icons.add),
+      ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        type: BottomNavigationBarType.fixed, // Important for 4+ items
+        currentIndex: 0,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
               icon: Icon(Icons.favorite), label: 'Favorites'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.add_home), label: 'My Properties'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          if (index == 0) {
+            // Already on home page
+          } else if (index == 1) {
+            Navigator.pushNamed(context, '/favorites');
+          } else if (index == 2) {
+            Navigator.pushNamed(context, '/profile');
+          }
         },
       ),
-      floatingActionButton: _currentIndex == 0
-          ? null
-          : _currentIndex == 2
-              ? FloatingActionButton(
-                  onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/add_property',
-                    ).then((_) {
-                      // Refresh both My Properties and Home data
-                      _loadData();
-                      setState(() {});
-                    });
-                  },
-                  tooltip: 'Add Property',
-                  child: const Icon(Icons.add),
-                )
-              : null,
     );
   }
 
   void _showSearchDialog() {
+    final controller = TextEditingController(text: _searchQuery);
     showDialog(
       context: context,
       builder: (context) {
-        String tempQuery = _searchQuery;
         return AlertDialog(
           title: const Text('Search Properties'),
           content: TextField(
+            controller: controller,
             decoration: const InputDecoration(
               hintText: 'Enter location, name, etc.',
               prefixIcon: Icon(Icons.search),
             ),
-            onChanged: (value) => tempQuery = value,
-            controller: TextEditingController(text: _searchQuery),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.pop(context);
+              },
               child: const Text('CANCEL'),
             ),
             ElevatedButton(
               onPressed: () {
-                setState(() => _searchQuery = tempQuery);
+                setState(() {
+                  _searchQuery = controller.text;
+                });
                 _loadData();
                 Navigator.pop(context);
               },

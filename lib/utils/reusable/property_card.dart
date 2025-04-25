@@ -35,6 +35,7 @@ class PropertyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+  print("Image URL: $imageUrl");
     return GestureDetector(
       onTap: onCardPressed,
       child: Container(
@@ -68,6 +69,7 @@ class PropertyCard extends StatelessWidget {
                     width: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
+              
                       return Container(
                         height: 200,
                         width: double.infinity,
@@ -196,6 +198,7 @@ class PropertyCard extends StatelessWidget {
                         "$bathrooms Bathroom",
                       ),
                       _buildFeatureItem(Icons.crop_square, "$squareFeet sq ft"),
+                      
                     ],
                   ),
                 ],

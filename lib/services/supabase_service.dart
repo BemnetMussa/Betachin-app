@@ -17,7 +17,6 @@ class SupabaseService {
 
   SupabaseService({required this.supabase});
 
-  // Get all properties
   Future<List<PropertyModel>> getProperties({
     bool rentOnly = false,
     bool buyOnly = false,
@@ -48,7 +47,7 @@ class SupabaseService {
 
       // Process the data to format it correctly for our model
       Map<int, Map<String, dynamic>> propertyMap = {};
-      Map<int, List<String>> propertyImages = {};
+      Map<int, List<Map<String, dynamic>>> propertyImages = {};
 
       for (var item in data) {
         final propertyId = item['id'] as int;
@@ -81,7 +80,10 @@ class SupabaseService {
           final images = item['property_images'] as List;
           for (var image in images) {
             if (image != null && image['image_url'] != null) {
-              propertyImages[propertyId]!.add(image['image_url']);
+              propertyImages[propertyId]!.add({
+                'image_url': image['image_url'],
+                'is_primary': image['is_primary'] ?? false,
+              });
             }
           }
         }
@@ -91,15 +93,23 @@ class SupabaseService {
       List<PropertyModel> properties = [];
       for (var propertyId in propertyMap.keys) {
         final Map<String, dynamic> property = propertyMap[propertyId]!;
-        property['image_urls'] = propertyImages[propertyId] ?? [];
-
-        // Set primary image URL to the first image or empty string
-        property['primary_image_url'] =
-            propertyImages[propertyId]?.isNotEmpty == true
-                ? propertyImages[propertyId]![0]
-                : '';
+        final imageData = propertyImages[propertyId] ?? [];
+        property['image_urls'] = imageData.map((img) => img['image_url'] as String).toList();
+        property['primary_image_url'] = imageData.firstWhere(
+              (img) => img['is_primary'] == true,
+              orElse: () => imageData.isNotEmpty ? imageData[0] : {'image_url': null},
+            )['image_url'];
 
         properties.add(PropertyModel.fromJson(property));
+      }
+
+      // Print property details for debugging
+      print("Fetched Properties:");
+      for (var property in properties) {
+        print('Property: ${property.propertyName}');
+        print('Primary Image URL: ${property.primaryImageUrl}');
+        print('All Image URLs: ${property.imageUrls.join(", ")}');
+        print('---');
       }
 
       return properties;
@@ -113,13 +123,13 @@ class SupabaseService {
   Future<PropertyModel> getPropertyById(int propertyId) async {
     try {
       final response = await supabase.from('properties').select('''
-            *,
-            property_images(image_url, is_primary)
-          ''').eq('id', propertyId).single();
+        *,
+        property_images(image_url, is_primary)
+      ''').eq('id', propertyId).single();
 
       // Process images
       List<String> imageUrls = [];
-      String primaryImageUrl = '';
+      String? primaryImageUrl;
 
       if (response['property_images'] != null) {
         final images = response['property_images'] as List;
@@ -134,7 +144,7 @@ class SupabaseService {
       }
 
       // If no primary image was marked, use the first one
-      if (primaryImageUrl.isEmpty && imageUrls.isNotEmpty) {
+      if (primaryImageUrl == null && imageUrls.isNotEmpty) {
         primaryImageUrl = imageUrls[0];
       }
 
@@ -150,7 +160,7 @@ class SupabaseService {
     }
   }
 
-  // Get user's properties - modified to match MyPropertiesPage usage
+  // Get user's properties
   Future<List<PropertyModel>> getUserProperties() async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) {
@@ -168,7 +178,7 @@ class SupabaseService {
 
       // Process the data to format it correctly for our model
       Map<int, Map<String, dynamic>> propertyMap = {};
-      Map<int, List<String>> propertyImages = {};
+      Map<int, List<Map<String, dynamic>>> propertyImages = {};
 
       for (var item in data) {
         final propertyId = item['id'] as int;
@@ -201,7 +211,10 @@ class SupabaseService {
           final images = item['property_images'] as List;
           for (var image in images) {
             if (image != null && image['image_url'] != null) {
-              propertyImages[propertyId]!.add(image['image_url']);
+              propertyImages[propertyId]!.add({
+                'image_url': image['image_url'],
+                'is_primary': image['is_primary'] ?? false,
+              });
             }
           }
         }
@@ -211,13 +224,12 @@ class SupabaseService {
       List<PropertyModel> properties = [];
       for (var propertyId in propertyMap.keys) {
         final Map<String, dynamic> property = propertyMap[propertyId]!;
-        property['image_urls'] = propertyImages[propertyId] ?? [];
-
-        // Set primary image URL to the first image or empty string
-        property['primary_image_url'] =
-            propertyImages[propertyId]?.isNotEmpty == true
-                ? propertyImages[propertyId]![0]
-                : '';
+        final imageData = propertyImages[propertyId] ?? [];
+        property['image_urls'] = imageData.map((img) => img['image_url'] as String).toList();
+        property['primary_image_url'] = imageData.firstWhere(
+              (img) => img['is_primary'] == true,
+              orElse: () => imageData.isNotEmpty ? imageData[0] : {'image_url': null},
+            )['image_url'];
 
         properties.add(PropertyModel.fromJson(property));
       }
@@ -229,7 +241,7 @@ class SupabaseService {
     }
   }
 
-  // Get favorite properties - matches HomePage usage
+  // Get favorite properties
   Future<List<PropertyModel>> getFavoriteProperties() async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) {
@@ -247,16 +259,16 @@ class SupabaseService {
 
       // Get all properties that match the favorite IDs
       var query = supabase.from('properties').select('''
-            *,
-            property_images(image_url, is_primary)
-          ''').inFilter('id', favoriteIds);
+        *,
+        property_images(image_url, is_primary)
+      ''').inFilter('id', favoriteIds);
 
       final response = await query;
       final List<dynamic> data = response;
 
       // Process the data
       Map<int, Map<String, dynamic>> propertyMap = {};
-      Map<int, List<String>> propertyImages = {};
+      Map<int, List<Map<String, dynamic>>> propertyImages = {};
 
       for (var item in data) {
         final propertyId = item['id'] as int;
@@ -289,7 +301,10 @@ class SupabaseService {
           final images = item['property_images'] as List;
           for (var image in images) {
             if (image != null && image['image_url'] != null) {
-              propertyImages[propertyId]!.add(image['image_url']);
+              propertyImages[propertyId]!.add({
+                'image_url': image['image_url'],
+                'is_primary': image['is_primary'] ?? false,
+              });
             }
           }
         }
@@ -299,13 +314,12 @@ class SupabaseService {
       List<PropertyModel> properties = [];
       for (var propertyId in propertyMap.keys) {
         final Map<String, dynamic> property = propertyMap[propertyId]!;
-        property['image_urls'] = propertyImages[propertyId] ?? [];
-
-        // Set primary image URL to the first image or empty string
-        property['primary_image_url'] =
-            propertyImages[propertyId]?.isNotEmpty == true
-                ? propertyImages[propertyId]![0]
-                : '';
+        final imageData = propertyImages[propertyId] ?? [];
+        property['image_urls'] = imageData.map((img) => img['image_url'] as String).toList();
+        property['primary_image_url'] = imageData.firstWhere(
+              (img) => img['is_primary'] == true,
+              orElse: () => imageData.isNotEmpty ? imageData[0] : {'image_url': null},
+            )['image_url'];
 
         properties.add(PropertyModel.fromJson(property));
       }
@@ -427,7 +441,7 @@ class SupabaseService {
         isActive: true,
         createdAt: DateTime.now(),
         imageUrls: imageUrls,
-        primaryImageUrl: imageUrls.isNotEmpty ? imageUrls[0] : '',
+        primaryImageUrl: imageUrls.isNotEmpty ? imageUrls[0] : null,
       );
     } catch (e) {
       _logger.severe('Error adding property: $e');
