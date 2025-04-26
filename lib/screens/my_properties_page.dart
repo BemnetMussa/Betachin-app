@@ -216,7 +216,7 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
                           rating: property.rating,
                           price: property.price,
                           isRent: property.listingType == 'rent',
-                          imageUrl: property.primaryImageUrl,
+                          imageUrl: property.primaryImageUrl ?? '',
                           bedrooms: property.bedrooms,
                           bathrooms: property.bathrooms,
                           squareFeet: property.squareFeet,

@@ -1,4 +1,3 @@
-// lib/models/property_model.dart
 class PropertyModel {
   final int id;
   final String userId;
@@ -17,7 +16,7 @@ class PropertyModel {
   final DateTime createdAt;
   final bool isActive;
   final List<String> imageUrls;
-  final String primaryImageUrl;
+  final String? primaryImageUrl;
 
   PropertyModel({
     required this.id,
@@ -37,7 +36,7 @@ class PropertyModel {
     required this.createdAt,
     this.isActive = true,
     required this.imageUrls,
-    required this.primaryImageUrl,
+    this.primaryImageUrl,
   });
 
   factory PropertyModel.fromJson(Map<String, dynamic> json) {
@@ -59,7 +58,7 @@ class PropertyModel {
       createdAt: DateTime.parse(json['created_at']),
       isActive: json['is_active'] ?? true,
       imageUrls: List<String>.from(json['image_urls'] ?? []),
-      primaryImageUrl: json['primary_image_url'] ?? '',
+      primaryImageUrl: json['primary_image_url'],
     );
   }
 
@@ -81,6 +80,8 @@ class PropertyModel {
       'rating': rating,
       'created_at': createdAt.toIso8601String(),
       'is_active': isActive,
+      'image_urls': imageUrls,
+      'primary_image_url': primaryImageUrl,
     };
   }
 }

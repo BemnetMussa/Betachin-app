@@ -109,7 +109,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
             createdAt: _property!.createdAt,
             isActive: !_property!.isActive,
             imageUrls: _property!.imageUrls,
-            primaryImageUrl: _property!.primaryImageUrl,
+   
           );
         });
 
