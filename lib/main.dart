@@ -8,7 +8,6 @@ import 'screens/edit_property_page.dart';
 import 'login_page.dart';
 import 'signup_page.dart';
 import '../models/property_model.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../models/property_model.dart';
 import '../../services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../utils/logger.dart';
 import '../../utils/reusable/property_card.dart';
 import 'property_detail.dart';
 

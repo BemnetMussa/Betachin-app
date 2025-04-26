@@ -1,9 +1,11 @@
-// lib/screens/add_property_page.dart
-import 'dart:io';
+import 'dart:io' show File;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/supabase_service.dart';
+import 'package:universal_html/html.dart' as html;
+import 'dart:typed_data' show Uint8List;
 
 class AddPropertyPage extends StatefulWidget {
   const AddPropertyPage({super.key});
@@ -30,9 +32,9 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
   double _price = 0;
   String _description = '';
   String _type = 'Apartment';
-  String _listingType = 'rent'; // 'rent' or 'buy'
-  // ignore: prefer_final_fields
-  List<File> _selectedImages = []; // Can't be final because we modify it
+  String _listingType = 'rent';
+  final List<dynamic> _selectedImages = [];
+  final List<Uint8List?> _imagePreviews = [];
 
   bool _isLoading = false;
 
@@ -48,13 +50,43 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
   ];
 
   Future<void> _pickImages() async {
-    final pickedFiles = await _imagePicker.pickMultiImage();
-    if (pickedFiles.isNotEmpty) {
-      setState(() {
-        _selectedImages.addAll(
-          pickedFiles.map((xFile) => File(xFile.path)).toList(),
-        );
+    if (kIsWeb) {
+      final input = html.FileUploadInputElement()..accept = 'image/*';
+      input.multiple = true;
+      input.click();
+
+      input.onChange.listen((event) async {
+        final files = input.files;
+        if (files != null && files.isNotEmpty) {
+          final newImages = <html.File>[];
+          final newPreviews = <Uint8List?>[];
+
+          for (var file in files) {
+            newImages.add(file);
+            final reader = html.FileReader();
+            reader.readAsArrayBuffer(file);
+            await reader.onLoadEnd.first;
+            newPreviews.add(reader.result as Uint8List?);
+          }
+
+          setState(() {
+            _selectedImages.addAll(newImages);
+            _imagePreviews.addAll(newPreviews);
+          });
+        }
       });
+    } else {
+      final pickedFiles = await _imagePicker.pickMultiImage();
+      if (pickedFiles.isNotEmpty) {
+        setState(() {
+          _selectedImages.addAll(
+            pickedFiles.map((xFile) => File(xFile.path)).toList(),
+          );
+          _imagePreviews.addAll(
+            List.filled(pickedFiles.length, null),
+          );
+        });
+      }
     }
   }
 
@@ -75,6 +107,18 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
     setState(() => _isLoading = true);
 
     try {
+      print('Submitting form with ${_selectedImages.length} images');
+      print('Property Name: $_propertyName');
+      print('Address: $_address');
+      print('Floor: $_floor');
+      print('City: $_city');
+      print('Bathrooms: $_bathrooms');
+      print('Bedrooms: $_bedrooms');
+      print('Square Feet: $_squareFeet');
+      print('Price: $_price');
+      print('Description: $_description');
+      print('Type: $_type');
+      print('Listing Type: $_listingType');
       await _supabaseService.addProperty(
         propertyName: _propertyName,
         address: _address,
@@ -114,362 +158,370 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Add New Property')),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Images section
-                      const Text(
-                        'Property Images',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Property Images',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 8),
-                      Container(
-                        height: 150,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child:
-                            _selectedImages.isEmpty
-                                ? Center(
-                                  child: TextButton.icon(
-                                    onPressed: _pickImages,
-                                    icon: const Icon(Icons.add_photo_alternate),
-                                    label: const Text('Add Photos'),
-                                  ),
-                                )
-                                : ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount:
-                                      _selectedImages.length +
-                                      1, // +1 for add button
-                                  itemBuilder: (context, index) {
-                                    if (index == _selectedImages.length) {
-                                      return Center(
-                                        child: IconButton(
-                                          onPressed: _pickImages,
-                                          icon: const Icon(
-                                            Icons.add_photo_alternate,
-                                          ),
-                                        ),
-                                      );
-                                    }
-
-                                    return Stack(
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.all(4),
-                                          child: Image.file(
-                                            _selectedImages[index],
-                                            width: 120,
-                                            height: 140,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                        Positioned(
-                                          top: 0,
-                                          right: 0,
-                                          child: IconButton(
-                                            icon: const Icon(
-                                              Icons.remove_circle,
-                                              color: Colors.red,
-                                            ),
-                                            onPressed: () {
-                                              setState(() {
-                                                _selectedImages.removeAt(index);
-                                              });
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 150,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const SizedBox(height: 16),
-
-                      // Listing type
-                      const Text(
-                        'Listing Type',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: RadioListTile<String>(
-                              title: const Text('For Rent'),
-                              value: 'rent',
-                              groupValue: _listingType,
-                              onChanged: (value) {
-                                setState(() {
-                                  _listingType = value!;
-                                });
-                              },
-                            ),
-                          ),
-                          Expanded(
-                            child: RadioListTile<String>(
-                              title: const Text('For Sale'),
-                              value: 'buy',
-                              groupValue: _listingType,
-                              onChanged: (value) {
-                                setState(() {
-                                  _listingType = value!;
-                                });
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Property name
-                      TextFormField(
-                        decoration: const InputDecoration(
-                          labelText: 'Property Name *',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter property name';
-                          }
-                          return null;
-                        },
-                        onSaved: (value) {
-                          _propertyName = value!;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Address
-                      TextFormField(
-                        decoration: const InputDecoration(
-                          labelText: 'Address *',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter address';
-                          }
-                          return null;
-                        },
-                        onSaved: (value) {
-                          _address = value!;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // City and Floor
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: TextFormField(
-                              decoration: const InputDecoration(
-                                labelText: 'City *',
-                                border: OutlineInputBorder(),
+                      child: _selectedImages.isEmpty
+                          ? Center(
+                              child: TextButton.icon(
+                                onPressed: _pickImages,
+                                icon: const Icon(Icons.add_photo_alternate),
+                                label: const Text('Add Photos'),
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter city';
+                            )
+                          : ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _selectedImages.length + 1,
+                              itemBuilder: (context, index) {
+                                if (index == _selectedImages.length) {
+                                  return Center(
+                                    child: IconButton(
+                                      onPressed: _pickImages,
+                                      icon: const Icon(Icons.add_photo_alternate),
+                                    ),
+                                  );
                                 }
-                                return null;
-                              },
-                              onSaved: (value) {
-                                _city = value!;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextFormField(
-                              decoration: const InputDecoration(
-                                labelText: 'Floor',
-                                border: OutlineInputBorder(),
-                              ),
-                              onSaved: (value) {
-                                _floor = value;
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
 
-                      // Property type
-                      DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: 'Property Type *',
-                          border: OutlineInputBorder(),
+                                return Stack(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(4),
+                                      child: kIsWeb
+                                          ? Image.memory(
+                                              _imagePreviews[index]!,
+                                              width: 120,
+                                              height: 140,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) =>
+                                                  const Icon(Icons.broken_image, size: 120),
+                                            )
+                                          : Image.file(
+                                              _selectedImages[index] as File,
+                                              width: 120,
+                                              height: 140,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) =>
+                                                  const Icon(Icons.broken_image, size: 120),
+                                            ),
+                                    ),
+                                    Positioned(
+                                      top: 0,
+                                      right: 0,
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          Icons.remove_circle,
+                                          color: Colors.red,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _selectedImages.removeAt(index);
+                                            _imagePreviews.removeAt(index);
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    const Text(
+                      'Listing Type',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RadioListTile<String>(
+                            title: const Text('For Rent'),
+                            value: 'rent',
+                            groupValue: _listingType,
+                            onChanged: (value) {
+                              setState(() {
+                                _listingType = value!;
+                              });
+                            },
+                          ),
                         ),
-                        value: _type,
-                        items:
-                            _propertyTypes.map((type) {
+                        Expanded(
+                          child: RadioListTile<String>(
+                            title: const Text('For Sale'),
+                            value: 'buy',
+                            groupValue: _listingType,
+                            onChanged: (value) {
+                              setState(() {
+                                _listingType = value!;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: 'Property Name *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter property name';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        _propertyName = value!.trim();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: 'Address *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter address';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        _address = value!.trim();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextFormField(
+                            decoration: const InputDecoration(
+                              labelText: 'City *',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter city';
+                              }
+                              return null;
+                            },
+                            onSaved: (value) {
+                              _city = value!.trim();
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            decoration: const InputDecoration(
+                              labelText: 'Floor',
+                              border: OutlineInputBorder(),
+                            ),
+                            onSaved: (value) {
+                              _floor = value?.trim();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'Property Type *',
+                        border: OutlineInputBorder(),
+                      ),
+                      value: _type,
+                      items: _propertyTypes.map((type) {
+                        return DropdownMenuItem(
+                          value: type,
+                          child: Text(type),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _type = value!;
+                        });
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please select property type';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: 'Price *',
+                        hintText: 'Enter price (per night for rent, total for sale)',
+                        border: OutlineInputBorder(),
+                        prefixText: '\$ ',
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter price';
+                        }
+                        final parsed = double.tryParse(value);
+                        if (parsed == null || parsed <= 0) {
+                          return 'Please enter a valid positive number';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        _price = double.parse(value!.trim());
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            decoration: const InputDecoration(
+                              labelText: 'Bedrooms *',
+                              border: OutlineInputBorder(),
+                            ),
+                            value: _bedrooms,
+                            items: List.generate(10, (index) {
                               return DropdownMenuItem(
-                                value: type,
-                                child: Text(type),
+                                value: index + 1,
+                                child: Text('${index + 1}'),
                               );
-                            }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _type = value!;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please select property type';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Price
-                      TextFormField(
-                        decoration: InputDecoration(
-                          labelText:
-                              'Price * (${_listingType == 'rent' ? 'per night' : 'total'})',
-                          border: const OutlineInputBorder(),
-                          prefixText: '\$ ',
+                            }),
+                            onChanged: (value) {
+                              setState(() {
+                                _bedrooms = value!;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null) {
+                                return 'Please select number of bedrooms';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter price';
-                          }
-                          if (double.tryParse(value) == null) {
-                            return 'Please enter a valid number';
-                          }
-                          return null;
-                        },
-                        onSaved: (value) {
-                          _price = double.parse(value!);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Bedrooms and Bathrooms
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              decoration: const InputDecoration(
-                                labelText: 'Bedrooms *',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _bedrooms,
-                              items: List.generate(10, (index) {
-                                return DropdownMenuItem(
-                                  value: index + 1,
-                                  child: Text('${index + 1}'),
-                                );
-                              }),
-                              onChanged: (value) {
-                                setState(() {
-                                  _bedrooms = value!;
-                                });
-                              },
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            decoration: const InputDecoration(
+                              labelText: 'Bathrooms *',
+                              border: OutlineInputBorder(),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              decoration: const InputDecoration(
-                                labelText: 'Bathrooms *',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _bathrooms,
-                              items: List.generate(10, (index) {
-                                return DropdownMenuItem(
-                                  value: index + 1,
-                                  child: Text('${index + 1}'),
-                                );
-                              }),
-                              onChanged: (value) {
-                                setState(() {
-                                  _bathrooms = value!;
-                                });
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Square feet
-                      TextFormField(
-                        decoration: const InputDecoration(
-                          labelText: 'Square Feet *',
-                          border: OutlineInputBorder(),
-                          suffixText: 'sq ft',
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter square feet';
-                          }
-                          if (int.tryParse(value) == null) {
-                            return 'Please enter a valid number';
-                          }
-                          return null;
-                        },
-                        onSaved: (value) {
-                          _squareFeet = int.parse(value!);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Description
-                      TextFormField(
-                        decoration: const InputDecoration(
-                          labelText: 'Description *',
-                          border: OutlineInputBorder(),
-                          alignLabelWithHint: true,
-                        ),
-                        maxLines: 5,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter description';
-                          }
-                          return null;
-                        },
-                        onSaved: (value) {
-                          _description = value!;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Submit button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: _submitForm,
-                          child: const Text(
-                            'Add Property',
-                            style: TextStyle(fontSize: 16),
+                            value: _bathrooms,
+                            items: List.generate(10, (index) {
+                              return DropdownMenuItem(
+                                value: index + 1,
+                                child: Text('${index + 1}'),
+                              );
+                            }),
+                            onChanged: (value) {
+                              setState(() {
+                                _bathrooms = value!;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null) {
+                                return 'Please select number of bathrooms';
+                              }
+                              return null;
+                            },
                           ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: 'Square Feet *',
+                        border: OutlineInputBorder(),
+                        suffixText: 'sq ft',
                       ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter square feet';
+                        }
+                        final parsed = int.tryParse(value.trim());
+                        if (parsed == null || parsed <= 0) {
+                          return 'Please enter a valid positive number';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        _squareFeet = int.parse(value!.trim());
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: 'Description *',
+                        border: OutlineInputBorder(),
+                        alignLabelWithHint: true,
+                      ),
+                      maxLines: 5,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter description';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        _description = value!.trim();
+                      },
+                    ),
+                    const SizedBox(height: 24),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _submitForm,
+                        child: const Text(
+                          'Add Property',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                 ),
               ),
+            ),
     );
   }
 }

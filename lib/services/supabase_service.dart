@@ -17,107 +17,136 @@ class SupabaseService {
 
   SupabaseService({required this.supabase});
 
-  Future<List<PropertyModel>> getProperties({
-    bool rentOnly = false,
-    bool buyOnly = false,
-    String? searchQuery,
-  }) async {
+  // Refresh the authentication session to ensure the token is valid
+  Future<void> refreshSession() async {
     try {
-      var query = supabase.from('properties').select('''
-        *,
-        property_images(image_url, is_primary)
-      ''');
-
-      // Apply listing type filters if specified
-      if (rentOnly) {
-        query = query.eq('listing_type', 'rent');
-      } else if (buyOnly) {
-        query = query.eq('listing_type', 'buy');
+      if (supabase.auth.currentSession != null) {
+        await supabase.auth.refreshSession();
+        print('Session refreshed successfully');
+      } else {
+        print('No session to refresh');
       }
+    } catch (e) {
+      print('Error refreshing session: $e');
+      _logger.severe('Error refreshing session: $e');
+    }
+  }
 
-      // Apply search filter if provided
-      if (searchQuery != null && searchQuery.isNotEmpty) {
-        query = query.or(
-          'property_name.ilike.%$searchQuery%,address.ilike.%$searchQuery%,city.ilike.%$searchQuery%',
-        );
-      }
+Future<List<PropertyModel>> getProperties({
+  bool rentOnly = false,
+  bool buyOnly = false,
+  String? searchQuery,
+}) async {
+  try {
+    var query = supabase.from('properties').select(''' 
+      *,
+      property_images(image_url, is_primary)
+    ''');
 
-      final response = await query;
-      final List<dynamic> data = response;
+    // Apply listing type filters if specified
+    if (rentOnly) {
+      query = query.eq('listing_type', 'rent');
+    } else if (buyOnly) {
+      query = query.eq('listing_type', 'buy');
+    }
 
-      // Process the data to format it correctly for our model
-      Map<int, Map<String, dynamic>> propertyMap = {};
-      Map<int, List<Map<String, dynamic>>> propertyImages = {};
+    // Apply search filter if provided
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      query = query.or(
+        'property_name.ilike.%$searchQuery%,address.ilike.%$searchQuery%,city.ilike.%$searchQuery%',
+      );
+    }
 
-      for (var item in data) {
-        final propertyId = item['id'] as int;
+    final response = await query;
+    final List<dynamic> data = response;
 
-        // If we haven't seen this property before, create the base property data
-        if (!propertyMap.containsKey(propertyId)) {
-          propertyMap[propertyId] = {
-            'id': propertyId,
-            'user_id': item['user_id'],
-            'property_name': item['property_name'],
-            'address': item['address'],
-            'floor': item['floor'],
-            'city': item['city'],
-            'bath_rooms': item['bath_rooms'],
-            'bed_rooms': item['bed_rooms'],
-            'square_feet': item['square_feet'],
-            'price': item['price'],
-            'description': item['description'],
-            'type': item['type'],
-            'listing_type': item['listing_type'],
-            'rating': item['rating'] ?? 0.0,
-            'created_at': item['created_at'],
-            'is_active': item['is_active'] ?? true,
-          };
-          propertyImages[propertyId] = [];
-        }
+    // Process the data to format it correctly for our model
+    Map<int, Map<String, dynamic>> propertyMap = {};
+    Map<int, List<Map<String, dynamic>>> propertyImages = {};
 
-        // Process property images
-        if (item['property_images'] != null) {
-          final images = item['property_images'] as List;
-          for (var image in images) {
-            if (image != null && image['image_url'] != null) {
-              propertyImages[propertyId]!.add({
-                'image_url': image['image_url'],
-                'is_primary': image['is_primary'] ?? false,
-              });
-            }
+    for (var item in data) {
+      final propertyId = item['id'] as int;
+
+      // Create the base property data
+      propertyMap[propertyId] = {
+        'id': propertyId,
+        'user_id': item['user_id'],
+        'property_name': item['property_name'],
+        'address': item['address'],
+        'floor': item['floor'],
+        'city': item['city'],
+        'bath_rooms': item['bath_rooms'],
+        'bed_rooms': item['bed_rooms'],
+        'square_feet': item['square_feet'],
+        'price': item['price'],
+        'description': item['description'],
+        'type': item['type'],
+        'listing_type': item['listing_type'],
+        'rating': item['rating'] ?? 0.0,
+        'created_at': item['created_at'],
+        'is_active': item['is_active'] ?? true,
+      };
+
+      // Process property images
+      propertyImages[propertyId] = [];
+      if (item['property_images'] != null) {
+        final images = item['property_images'] as List;
+        for (var image in images) {
+          if (image != null && image['image_url'] != null) {
+            final imageUrl = image['image_url'] as String;
+            final isPrimary = image['is_primary'] ?? false;
+
+            propertyImages[propertyId]!.add({
+              'image_url': imageUrl,
+              'is_primary': isPrimary,
+            });
           }
         }
       }
-
-      // Convert to PropertyModel objects
-      List<PropertyModel> properties = [];
-      for (var propertyId in propertyMap.keys) {
-        final Map<String, dynamic> property = propertyMap[propertyId]!;
-        final imageData = propertyImages[propertyId] ?? [];
-        property['image_urls'] = imageData.map((img) => img['image_url'] as String).toList();
-        property['primary_image_url'] = imageData.firstWhere(
-              (img) => img['is_primary'] == true,
-              orElse: () => imageData.isNotEmpty ? imageData[0] : {'image_url': null},
-            )['image_url'];
-
-        properties.add(PropertyModel.fromJson(property));
-      }
-
-      // Print property details for debugging
-      print("Fetched Properties:");
-      for (var property in properties) {
-        print('Property: ${property.propertyName}');
-        print('Primary Image URL: ${property.primaryImageUrl}');
-        print('All Image URLs: ${property.imageUrls.join(", ")}');
-        print('---');
-      }
-
-      return properties;
-    } catch (e) {
-      _logger.severe('Error fetching properties: $e');
-      rethrow;
     }
+
+    // Convert to PropertyModel objects
+    List<PropertyModel> properties = [];
+    for (var propertyId in propertyMap.keys) {
+      final Map<String, dynamic> property = propertyMap[propertyId]!;
+      final imageData = propertyImages[propertyId] ?? [];
+
+      // Add the image URLs to the property
+      property['image_urls'] = imageData
+          .where((img) => img['image_url'] != null)
+          .map((img) => img['image_url'] as String)
+          .toList();
+
+     // Pick the primary image (prefer the one marked is_primary = true)
+    final primaryImage = imageData.firstWhere(
+      (img) => img['is_primary'] == true,
+      orElse: () => {},
+    );
+
+    property['primary_image_url'] = primaryImage.isNotEmpty
+        ? primaryImage['image_url']
+        : null;
+
+
+      property['primary_image_url'] = primaryImage != null
+          ? primaryImage['image_url']
+          : null;
+
+      properties.add(PropertyModel.fromJson(property));
+    }
+
+    for (var property in properties) {
+      print('Fetched property: ${property.propertyName}, Primary Image URL: ${property.primaryImageUrl}');
+    }
+    print('Fetched ${properties.length} properties');
+
+    return properties;
+  } catch (e) {
+    print('Error fetching properties: $e');
+    rethrow;
   }
+}
+
 
   // Get a specific property by ID
   Future<PropertyModel> getPropertyById(int propertyId) async {
@@ -331,7 +360,7 @@ class SupabaseService {
     }
   }
 
-  // Add a property - updated for web compatibility
+  // Add a property - updated with session refresh and detailed logging
   Future<PropertyModel> addProperty({
     required String propertyName,
     required String address,
@@ -352,6 +381,11 @@ class SupabaseService {
     }
 
     try {
+      print('Adding property for user: $userId');
+      print('Authentication state: ${supabase.auth.currentSession != null ? "Authenticated" : "Not Authenticated"}');
+      print('Current session token: ${supabase.auth.currentSession?.accessToken.substring(0, 10)}...');
+      await refreshSession(); // Ensure token is valid before upload
+
       // 1. Insert property data
       final propertyResponse = await supabase
           .from('properties')
@@ -375,45 +409,48 @@ class SupabaseService {
           .single();
 
       final propertyId = propertyResponse['id'];
+      print('Property inserted with ID: $propertyId');
       List<String> imageUrls = [];
 
       // 2. Upload images and create records
       for (var i = 0; i < images.length; i++) {
         final fileName = '${DateTime.now().millisecondsSinceEpoch}_$i';
-        final filePath = 'properties/$propertyId/$fileName';
+        final filePath = 'Property images/properties/$propertyId/$fileName';
         String imageUrl;
 
+        print('Uploading image $i to path: $filePath');
         if (kIsWeb) {
           // Handle web file upload
           final file = images[i] as html.File;
           final bytes = await _readWebFileAsBytes(file);
+          print('Web upload: bucket=images, path=$filePath, contentType=${file.type}');
 
-          await supabase.storage.from('property_images').uploadBinary(
+          await supabase.storage.from('images').uploadBinary(
                 filePath,
                 bytes,
                 fileOptions: FileOptions(contentType: file.type),
               );
 
-          imageUrl =
-              supabase.storage.from('property_images').getPublicUrl(filePath);
+          imageUrl = supabase.storage.from('images').getPublicUrl(filePath);
+          print('Web image URL: $imageUrl');
         } else {
           // Handle native file upload
           final file = images[i] as File;
           final fileExt = file.path.split('.').last;
           final filePathWithExt = '$filePath.$fileExt';
+          print('Mobile upload: bucket=images, path=$filePathWithExt');
 
-          await supabase.storage.from('property_images').upload(
+          await supabase.storage.from('images').upload(
                 filePathWithExt,
                 file,
               );
 
-          imageUrl = supabase.storage
-              .from('property_images')
-              .getPublicUrl(filePathWithExt);
+          imageUrl = supabase.storage.from('images').getPublicUrl(filePathWithExt);
+          print('Mobile image URL: $imageUrl');
         }
 
         imageUrls.add(imageUrl);
-
+   
         // Create image record
         await supabase.from('property_images').insert({
           'property_id': propertyId,
@@ -422,6 +459,7 @@ class SupabaseService {
         });
       }
 
+      print('Property added with ${imageUrls.length} images');
       // 3. Return the newly created property with images
       return PropertyModel(
         id: propertyId,
@@ -444,6 +482,7 @@ class SupabaseService {
         primaryImageUrl: imageUrls.isNotEmpty ? imageUrls[0] : null,
       );
     } catch (e) {
+      print('Error adding property: $e');
       _logger.severe('Error adding property: $e');
       rethrow;
     }
@@ -463,7 +502,7 @@ class SupabaseService {
     return completer.future;
   }
 
-  // Updated update property method for web compatibility
+  // Updated update property method - fixed 'referrals' typo
   Future<void> updateProperty({
     required int propertyId,
     required String propertyName,
@@ -486,6 +525,11 @@ class SupabaseService {
     }
 
     try {
+      print('Updating property ID: $propertyId for user: $userId');
+      print('Authentication state: ${supabase.auth.currentSession != null ? "Authenticated" : "Not Authenticated"}');
+      print('Current session token: ${supabase.auth.currentSession?.accessToken.substring(0, 10)}...');
+      await refreshSession(); // Ensure token is valid before upload
+
       // Verify ownership
       await supabase
           .from('properties')
@@ -497,6 +541,7 @@ class SupabaseService {
       // Handle image deletions if provided
       if (imagesToDelete != null && imagesToDelete.isNotEmpty) {
         for (final imageUrl in imagesToDelete) {
+          print('Deleting image: $imageUrl');
           // Delete the image record from the database
           await supabase
               .from('property_images')
@@ -506,14 +551,13 @@ class SupabaseService {
 
           // Extract the file path from the URL to delete from storage
           try {
-            final regex = RegExp(r'property_images\/(.+)');
+            final regex = RegExp(r'images\/(.+)');
             final match = regex.firstMatch(imageUrl);
             if (match != null && match.groupCount >= 1) {
               final storagePath = match.group(1);
               if (storagePath != null) {
-                await supabase.storage
-                    .from('property_images')
-                    .remove([storagePath]);
+                print('Removing from storage: $storagePath');
+                await supabase.storage.from('images').remove([storagePath]);
               }
             }
           } catch (e) {
@@ -527,38 +571,41 @@ class SupabaseService {
       if (newImages != null && newImages.isNotEmpty) {
         for (var i = 0; i < newImages.length; i++) {
           final fileName = '${DateTime.now().millisecondsSinceEpoch}_$i';
-          final filePath = 'properties/$propertyId/$fileName';
+          final filePath = 'Property images/properties/$propertyId/$fileName';
           String imageUrl;
 
+          print('Uploading new image $i to path: $filePath');
           if (kIsWeb) {
             // Handle web file upload
             final file = newImages[i] as html.File;
             final bytes = await _readWebFileAsBytes(file);
+            print('Web upload: bucket=images, path=$filePath, contentType=${file.type}');
 
-            await supabase.storage.from('property_images').uploadBinary(
+            await supabase.storage.from('images').uploadBinary(
                   filePath,
                   bytes,
                   fileOptions: FileOptions(contentType: file.type),
                 );
 
-            imageUrl =
-                supabase.storage.from('property_images').getPublicUrl(filePath);
+            imageUrl = supabase.storage.from('images').getPublicUrl(filePath);
+            print('Web image URL: $imageUrl');
           } else {
             // Handle native file upload
             final file = newImages[i] as File;
             final fileExt = file.path.split('.').last;
             final filePathWithExt = '$filePath.$fileExt';
+            print('Mobile upload: bucket=images, path=$filePathWithExt');
 
-            await supabase.storage.from('property_images').upload(
+            await supabase.storage.from('images').upload(
                   filePathWithExt,
                   file,
                 );
 
-            imageUrl = supabase.storage
-                .from('property_images')
-                .getPublicUrl(filePathWithExt);
+            imageUrl = supabase.storage.from('images').getPublicUrl(filePathWithExt);
+            print('Mobile image URL: $imageUrl');
           }
 
+          print('Inserting new image URL into property_images: $imageUrl');
           // Create new image record
           await supabase.from('property_images').insert({
             'property_id': propertyId,
@@ -584,8 +631,11 @@ class SupabaseService {
         'updated_at': DateTime.now().toIso8601String(),
       };
 
+      print('Updating property data with: $updates');
       await supabase.from('properties').update(updates).eq('id', propertyId);
+      print('Property updated successfully');
     } catch (e) {
+      print('Error updating property: $e');
       _logger.severe('Error updating property: $e');
       throw Exception('Failed to update property: $e');
     }
@@ -618,6 +668,11 @@ class SupabaseService {
     }
 
     try {
+      print('Deleting property ID: $propertyId for user: $userId');
+      print('Authentication state: ${supabase.auth.currentSession != null ? "Authenticated" : "Not Authenticated"}');
+      print('Current session token: ${supabase.auth.currentSession?.accessToken.substring(0, 10)}...');
+      await refreshSession();
+
       // 1. Verify ownership
       await supabase
           .from('properties')
@@ -638,7 +693,7 @@ class SupabaseService {
       // Extract storage paths from URLs
       for (var item in imageData) {
         final imageUrl = item['image_url'] as String;
-        final regex = RegExp(r'property_images\/(.+)');
+        final regex = RegExp(r'images\/(.+)');
         final match = regex.firstMatch(imageUrl);
         if (match != null && match.groupCount >= 1) {
           final storagePath = match.group(1);
@@ -651,7 +706,8 @@ class SupabaseService {
       // 3. Delete all property images from storage
       if (imagePaths.isNotEmpty) {
         try {
-          await supabase.storage.from('property_images').remove(imagePaths);
+          print('Removing images from storage: $imagePaths');
+          await supabase.storage.from('images').remove(imagePaths);
         } catch (e) {
           // Continue even if storage deletion fails
           _logger.warning('Failed to delete some storage files: $e');
@@ -659,8 +715,11 @@ class SupabaseService {
       }
 
       // 4. Delete property records (cascade will delete property_images entries)
+      print('Deleting property records for property ID: $propertyId');
       await supabase.from('properties').delete().eq('id', propertyId);
+      print('Property deleted successfully');
     } catch (e) {
+      print('Error deleting property: $e');
       _logger.severe('Error deleting property: $e');
       throw Exception('Property not found or you don\'t have permission: $e');
     }
