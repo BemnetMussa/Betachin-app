@@ -454,3 +454,25 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+// Handle logout with confirmation dialog and Supabase auth sign-out
+  void _handleLogout() async {
+    // Show confirmation dialog
+    final bool? shouldLogout = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Logout'),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Log Out'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout != true) return;
