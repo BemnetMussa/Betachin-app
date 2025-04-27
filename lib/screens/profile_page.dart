@@ -269,3 +269,32 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     }
   }
+  // Show dialog with admin contact information
+  void _contactAdmin() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Contact Admin'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('For any issues or inquiries, please contact the admin at:'),
+            SizedBox(height: 8),
+            Text('admin@property.com',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(height: 8),
+            Text('or call us at:'),
+            SizedBox(height: 8),
+            Text('+1 (555) 123-4567',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
