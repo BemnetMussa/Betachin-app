@@ -138,3 +138,27 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+// Update user password via Supabase auth
+  Future<void> _updatePassword(String newPassword) async {
+    try {
+      setState(() => _isLoading = true);
+      await _supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password updated successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update password: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
