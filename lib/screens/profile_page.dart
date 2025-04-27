@@ -435,3 +435,22 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
     );
   }
+ // Helper method to build section titles with a divider
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          const Expanded(child: Divider(indent: 8)),
+        ],
+      ),
+    );
+  }
