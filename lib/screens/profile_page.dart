@@ -298,3 +298,140 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+  // Build the ProfilePage UI with card-like sections
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // AppBar: Topmost component displaying the page title
+      appBar: AppBar(
+        title: const Text('Profile'),
+        elevation: 0,
+      ),
+      // Body: Conditionally shows loading indicator or profile content
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Profile Header Card: Displays user avatar and details
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    // Fixed deprecated withOpacity by using withAlpha
+                    color: Theme.of(context).primaryColor.withAlpha(25),
+                    child: Column(
+                      children: [
+                        const CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.blue,
+                          child:
+                              Icon(Icons.person, size: 70, color: Colors.white),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _fullName,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _email,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        if (_phone != null && _phone!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              _phone!,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'User ID: $_userId',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Spacer between Profile Header and Account section
+                  const SizedBox(height: 16),
+                  // Account Settings Card: Options for editing profile and password
+                  _buildSectionTitle('Account'),
+                  ListTile(
+                    leading: const Icon(Icons.person_outline),
+                    title: const Text('Edit Profile'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _editProfile,
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.lock_outline),
+                    title: const Text('Change Password'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _showChangePasswordDialog,
+                  ),
+                  // Spacer between Account and Privacy & Security sections
+                  const SizedBox(height: 16),
+                  // Privacy & Security Card: Links to privacy policy and terms
+                  _buildSectionTitle('Privacy & Security'),
+                  ListTile(
+                    leading: const Icon(Icons.security),
+                    title: const Text('Privacy Policy'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content:
+                                Text('Privacy Policy not implemented yet')),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.help_outline),
+                    title: const Text('Terms & Conditions'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content:
+                                Text('Terms & Conditions not implemented yet')),
+                      );
+                    },
+                  ),
+                  // Spacer between Privacy & Security and Support sections
+                  const SizedBox(height: 16),
+                  // Support Card: Options for contacting admin and logging out
+                  _buildSectionTitle('Support'),
+                  ListTile(
+                    leading: const Icon(Icons.support_agent),
+                    title: const Text('Contact Admin'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _contactAdmin,
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.logout, color: Colors.red),
+                    title: const Text('Log Out',
+                        style: TextStyle(color: Colors.red)),
+                    onTap: _handleLogout,
+                  ),
+                  // Final spacer at the bottom of the scrollable content
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+    );
+  }
