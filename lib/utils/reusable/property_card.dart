@@ -1,5 +1,6 @@
 // lib/utils/reusables/property_card.dart
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart'; // Add this import for logging
 
 class PropertyCard extends StatelessWidget {
   final int id;
@@ -15,8 +16,9 @@ class PropertyCard extends StatelessWidget {
   final bool isFavorite;
   final Function()? onFavoritePressed;
   final Function()? onCardPressed;
+  final _logger = Logger('PropertyCard'); // Create a logger instance
 
-  const PropertyCard({
+  PropertyCard({
     super.key, // Changed to super parameter
     required this.id,
     required this.propertyName,
@@ -35,7 +37,7 @@ class PropertyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  print("Image URL: $imageUrl");
+    _logger.info("Image URL: $imageUrl");
     return GestureDetector(
       onTap: onCardPressed,
       child: Container(
@@ -69,7 +71,6 @@ class PropertyCard extends StatelessWidget {
                     width: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-              
                       return Container(
                         height: 200,
                         width: double.infinity,
@@ -198,7 +199,6 @@ class PropertyCard extends StatelessWidget {
                         "$bathrooms Bathroom",
                       ),
                       _buildFeatureItem(Icons.crop_square, "$squareFeet sq ft"),
-                      
                     ],
                   ),
                 ],

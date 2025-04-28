@@ -69,7 +69,8 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     }
   }
-   // Show dialog for changing user password
+
+  // Show dialog for changing user password
   void _showChangePasswordDialog() {
     final TextEditingController passwordController = TextEditingController();
     final TextEditingController confirmPasswordController =
@@ -138,6 +139,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+
 // Update user password via Supabase auth
   Future<void> _updatePassword(String newPassword) async {
     try {
@@ -162,7 +164,8 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     }
   }
- // Show dialog for editing user profile details
+
+  // Show dialog for editing user profile details
   Future<void> _editProfile() async {
     final TextEditingController nameController =
         TextEditingController(text: _fullName);
@@ -269,6 +272,7 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     }
   }
+
   // Show dialog with admin contact information
   void _contactAdmin() {
     showDialog(
@@ -298,6 +302,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+
   // Build the ProfilePage UI with card-like sections
   @override
   Widget build(BuildContext context) {
@@ -435,7 +440,8 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
     );
   }
- // Helper method to build section titles with a divider
+
+  // Helper method to build section titles with a divider
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -454,6 +460,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+
 // Handle logout with confirmation dialog and Supabase auth sign-out
   void _handleLogout() async {
     // Show confirmation dialog
@@ -476,3 +483,28 @@ class _ProfilePageState extends State<ProfilePage> {
     );
 
     if (shouldLogout != true) return;
+    try {
+      setState(() => _isLoading = true);
+
+      // Cache the BuildContext for later use
+      // ignore: use_build_context_synchronously
+      final navigatorContext = Navigator.of(context);
+
+      await _supabase.auth.signOut();
+
+      // Use mounted check before accessing context
+      if (!mounted) return;
+
+      // Use the cached navigator context with proper mounted check
+      navigatorContext.pushReplacementNamed('/login');
+    } catch (e) {
+      // Use mounted check before accessing context
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Logout failed: ${e.toString()}')),
+      );
+      setState(() => _isLoading = false);
+    }
+  }
+}

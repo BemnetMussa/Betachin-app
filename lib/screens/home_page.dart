@@ -4,6 +4,7 @@ import '../../services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../utils/reusable/property_card.dart';
 import 'property_detail.dart';
+import 'package:logging/logging.dart'; // Add this import for logging
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,6 +17,7 @@ class _HomePageState extends State<HomePage> {
   final SupabaseService _supabaseService = SupabaseService(
     supabase: Supabase.instance.client,
   );
+  final _logger = Logger('HomePage'); // Create a logger instance
 
   List<PropertyModel> _properties = [];
   List<int> _favoriteIds = [];
@@ -178,11 +180,13 @@ class _HomePageState extends State<HomePage> {
                               final property = _properties[index];
                               final isFavorite =
                                   _favoriteIds.contains(property.id);
-                              print("Image URL: ${property.primaryImageUrl}");
+                              _logger.info(
+                                  "Image URL: ${property.primaryImageUrl}");
                               return PropertyCard(
                                 id: property.id,
                                 propertyName: property.propertyName,
-                                address: "${property.address}, ${property.city}",
+                                address:
+                                    "${property.address}, ${property.city}",
                                 rating: property.rating,
                                 price: property.price,
                                 isRent: property.listingType == 'rent',
@@ -212,7 +216,8 @@ class _HomePageState extends State<HomePage> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.pushNamed(context, '/add_property').then((_) => _loadData());
+          Navigator.pushNamed(context, '/add_property')
+              .then((_) => _loadData());
         },
         tooltip: 'Add Property',
         child: const Icon(Icons.add),

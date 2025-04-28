@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/supabase_service.dart';
 import 'package:universal_html/html.dart' as html;
 import 'dart:typed_data' show Uint8List;
+import 'package:logging/logging.dart'; // Add this import for logging
 
 class AddPropertyPage extends StatefulWidget {
   const AddPropertyPage({super.key});
@@ -20,6 +21,7 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
   );
   final _formKey = GlobalKey<FormState>();
   final _imagePicker = ImagePicker();
+  final _logger = Logger('AddPropertyPage'); // Create a logger instance
 
   // Form fields
   String _propertyName = '';
@@ -107,18 +109,18 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
     setState(() => _isLoading = true);
 
     try {
-      print('Submitting form with ${_selectedImages.length} images');
-      print('Property Name: $_propertyName');
-      print('Address: $_address');
-      print('Floor: $_floor');
-      print('City: $_city');
-      print('Bathrooms: $_bathrooms');
-      print('Bedrooms: $_bedrooms');
-      print('Square Feet: $_squareFeet');
-      print('Price: $_price');
-      print('Description: $_description');
-      print('Type: $_type');
-      print('Listing Type: $_listingType');
+      _logger.info('Submitting form with ${_selectedImages.length} images');
+      _logger.info('Property Name: $_propertyName');
+      _logger.info('Address: $_address');
+      _logger.info('Floor: $_floor');
+      _logger.info('City: $_city');
+      _logger.info('Bathrooms: $_bathrooms');
+      _logger.info('Bedrooms: $_bedrooms');
+      _logger.info('Square Feet: $_squareFeet');
+      _logger.info('Price: $_price');
+      _logger.info('Description: $_description');
+      _logger.info('Type: $_type');
+      _logger.info('Listing Type: $_listingType');
       await _supabaseService.addProperty(
         propertyName: _propertyName,
         address: _address,
@@ -197,7 +199,8 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
                                   return Center(
                                     child: IconButton(
                                       onPressed: _pickImages,
-                                      icon: const Icon(Icons.add_photo_alternate),
+                                      icon:
+                                          const Icon(Icons.add_photo_alternate),
                                     ),
                                   );
                                 }
@@ -212,16 +215,20 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
                                               width: 120,
                                               height: 140,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) =>
-                                                  const Icon(Icons.broken_image, size: 120),
+                                              errorBuilder: (context, error,
+                                                      stackTrace) =>
+                                                  const Icon(Icons.broken_image,
+                                                      size: 120),
                                             )
                                           : Image.file(
                                               _selectedImages[index] as File,
                                               width: 120,
                                               height: 140,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) =>
-                                                  const Icon(Icons.broken_image, size: 120),
+                                              errorBuilder: (context, error,
+                                                      stackTrace) =>
+                                                  const Icon(Icons.broken_image,
+                                                      size: 120),
                                             ),
                                     ),
                                     Positioned(
@@ -246,7 +253,6 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
                             ),
                     ),
                     const SizedBox(height: 16),
-
                     const Text(
                       'Listing Type',
                       style: TextStyle(
@@ -284,7 +290,6 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
-
                     TextFormField(
                       decoration: const InputDecoration(
                         labelText: 'Property Name *',
@@ -301,7 +306,6 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
                       },
                     ),
                     const SizedBox(height: 16),
-
                     TextFormField(
                       decoration: const InputDecoration(
                         labelText: 'Address *',
@@ -318,7 +322,6 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
                       },
                     ),
                     const SizedBox(height: 16),
-
                     Row(
                       children: [
                         Expanded(
@@ -354,7 +357,6 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
-
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(
                         labelText: 'Property Type *',
@@ -380,15 +382,16 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
                       },
                     ),
                     const SizedBox(height: 16),
-
                     TextFormField(
                       decoration: const InputDecoration(
                         labelText: 'Price *',
-                        hintText: 'Enter price (per night for rent, total for sale)',
+                        hintText:
+                            'Enter price (per night for rent, total for sale)',
                         border: OutlineInputBorder(),
                         prefixText: '\$ ',
                       ),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Please enter price';
@@ -404,7 +407,6 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
                       },
                     ),
                     const SizedBox(height: 16),
-
                     Row(
                       children: [
                         Expanded(
@@ -463,7 +465,6 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
-
                     TextFormField(
                       decoration: const InputDecoration(
                         labelText: 'Square Feet *',
@@ -486,7 +487,6 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
                       },
                     ),
                     const SizedBox(height: 16),
-
                     TextFormField(
                       decoration: const InputDecoration(
                         labelText: 'Description *',
@@ -505,7 +505,6 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
                       },
                     ),
                     const SizedBox(height: 24),
-
                     SizedBox(
                       width: double.infinity,
                       height: 50,
