@@ -1,4 +1,4 @@
-// Import required packages for Flutter, Supabase, and custom utilities
+// lib/screens/my_properties/my_properties_page.dart
 import 'package:flutter/material.dart';
 import '../../models/property_model.dart';
 import '../../services/supabase_service.dart';
@@ -6,7 +6,6 @@ import '../../utils/reusable/property_card.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import './property_detail.dart'; // Adjust import path as needed
 
-// MyPropertiesPage widget, displays user-owned properties with management options
 class MyPropertiesPage extends StatefulWidget {
   const MyPropertiesPage({super.key});
 
@@ -14,24 +13,20 @@ class MyPropertiesPage extends StatefulWidget {
   State<MyPropertiesPage> createState() => _MyPropertiesPageState();
 }
 
-// State class for MyPropertiesPage, managing property data and UI state
 class _MyPropertiesPageState extends State<MyPropertiesPage> {
-  // Initialize Supabase service for data operations
   final SupabaseService _supabaseService = SupabaseService(
     supabase: Supabase.instance.client,
   );
 
-  // State variables for properties and loading status
   List<PropertyModel> _properties = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // Load user properties on widget initialization
     _loadProperties();
   }
-  // Fetch user-owned properties from Supabase
+
   Future<void> _loadProperties() async {
     setState(() => _isLoading = true);
     try {
@@ -50,7 +45,6 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
     }
   }
 
-  // Show options menu for editing, listing/delisting, or deleting a property
   void _showPropertyOptions(PropertyModel property) {
     showModalBottomSheet(
       context: context,
@@ -100,7 +94,7 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
       },
     );
   }
-// Toggle the active/inactive status of a property
+
   Future<void> _togglePropertyListing(PropertyModel property) async {
     try {
       await _supabaseService.togglePropertyListing(
@@ -128,7 +122,6 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
     }
   }
 
-  // Show confirmation dialog for deleting a property
   void _confirmDeleteProperty(PropertyModel property) {
     showDialog(
       context: context,
@@ -157,3 +150,147 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
       },
     );
   }
+
+  Future<void> _deleteProperty(PropertyModel property) async {
+    try {
+      await _supabaseService.deleteProperty(property.id);
+
+      if (!mounted) return; // Check if widget is still mounted
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Property deleted successfully. It has been removed from all pages.')),
+      );
+
+      _loadProperties();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Custom header for My Properties page
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'My Properties',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).primaryColor,
+            ),
+          ),
+        ),
+
+        // Main content
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _properties.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.home_work,
+                              size: 64, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text(
+                            'You have no properties',
+                            style: TextStyle(
+                                fontSize: 18, color: Colors.grey[600]),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tap the + button to add a new property',
+                            style: TextStyle(
+                                fontSize: 14, color: Colors.grey[500]),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadProperties,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _properties.length,
+                        itemBuilder: (context, index) {
+                          final property = _properties[index];
+
+                          return Stack(
+                            children: [
+                              PropertyCard(
+                                id: property.id,
+                                propertyName: property.propertyName,
+                                address:
+                                    "${property.address}, ${property.city}",
+                                rating: property.rating,
+                                price: property.price,
+                                isRent: property.listingType == 'rent',
+                                imageUrl: property.primaryImageUrl ?? '',
+                                bedrooms: property.bedrooms,
+                                bathrooms: property.bathrooms,
+                                squareFeet: property.squareFeet,
+                                isFavorite: false,
+                                onCardPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PropertyDetailPage(
+                                        propertyId: property.id,
+                                      ),
+                                    ),
+                                  ).then((_) => _loadProperties());
+                                },
+                              ),
+                              Positioned(
+                                top: 10,
+                                right: 10,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: property.isActive
+                                        ? Colors.green
+                                        : Colors.grey,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    property.isActive ? 'Active' : 'Inactive',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 10,
+                                left: 10,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.more_vert,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () =>
+                                      _showPropertyOptions(property),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+        ),
+      ],
+    );
+  }
+}
