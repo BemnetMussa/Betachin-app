@@ -42,6 +42,7 @@ class _HomePageState extends State<HomePage> {
     // Load properties and favorites on widget initialization
     _loadData();
   }
+
   // Fetch properties and user favorites from Supabase
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
@@ -69,6 +70,7 @@ class _HomePageState extends State<HomePage> {
       }
     }
   }
+
   // Toggle favorite status for a property
   Future<void> _toggleFavorite(int propertyId) async {
     try {
@@ -90,7 +92,7 @@ class _HomePageState extends State<HomePage> {
       }
     }
   }
-  
+
   // Build the main UI with navigation and conditional FAB
   @override
   Widget build(BuildContext context) {
@@ -139,8 +141,10 @@ class _HomePageState extends State<HomePage> {
         type: BottomNavigationBarType.fixed, // Important for 4+ items
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favorites'),
-          BottomNavigationBarItem(icon: Icon(Icons.apartment), label: 'My Properties'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.favorite), label: 'Favorites'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.apartment), label: 'My Properties'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         onTap: (index) {
@@ -151,3 +155,189 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
+  // Build the home page content with property listings
+  Widget _buildHomePage() {
+    return Column(
+      children: [
+        // Title Section: Encourages users to explore properties
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Text(
+            'Explore your home',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).primaryColor,
+            ),
+          ),
+        ),
+        // Filter and Search Card: Horizontal row of filter chips and search button
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          child: Row(
+            children: [
+              FilterChip(
+                label: const Text('All'),
+                selected: !_showRentOnly && !_showBuyOnly,
+                onSelected: (selected) {
+                  if (selected) {
+                    setState(() {
+                      _showRentOnly = false;
+                      _showBuyOnly = false;
+                    });
+                    _loadData();
+                  }
+                },
+              ),
+              const SizedBox(width: 8),
+              FilterChip(
+                label: const Text('For Rent'),
+                selected: _showRentOnly,
+                onSelected: (selected) {
+                  setState(() {
+                    _showRentOnly = selected;
+                    if (selected) _showBuyOnly = false;
+                  });
+                  _loadData();
+                },
+              ),
+              const SizedBox(width: 8),
+              FilterChip(
+                label: const Text('For Sale'),
+                selected: _showBuyOnly,
+                onSelected: (selected) {
+                  setState(() {
+                    _showBuyOnly = selected;
+                    if (selected) _showRentOnly = false;
+                  });
+                  _loadData();
+                },
+              ),
+              const SizedBox(width: 8),
+              // Search button to open search dialog
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () {
+                    _showSearchDialog();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Properties List Card: Scrollable list of property cards
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _properties.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.home_work,
+                            size: 64,
+                            color: Color.fromARGB(255, 255, 54, 54),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No properties found',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: const Color.fromARGB(255, 255, 0, 0),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadData,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _properties.length,
+                        itemBuilder: (context, index) {
+                          final property = _properties[index];
+                          final isFavorite = _favoriteIds.contains(property.id);
+
+                          return PropertyCard(
+                            id: property.id,
+                            propertyName: property.propertyName,
+                            address: "${property.address}, ${property.city}",
+                            rating: property.rating,
+                            price: property.price,
+                            isRent: property.listingType == 'rent',
+                            imageUrl: property.primaryImageUrl ?? '',
+                            bedrooms: property.bedrooms,
+                            bathrooms: property.bathrooms,
+                            squareFeet: property.squareFeet,
+                            isFavorite: isFavorite,
+                            onFavoritePressed: () =>
+                                _toggleFavorite(property.id),
+                            onCardPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PropertyDetailPage(
+                                    propertyId: property.id,
+                                  ),
+                                ),
+                              ).then((_) => _loadData());
+                            },
+                          );
+                        },
+                      ),
+                    ),
+        ),
+      ],
+    );
+  }
+
+  // Show dialog for searching properties
+  void _showSearchDialog() {
+    final controller = TextEditingController(text: _searchQuery);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Search Properties'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              hintText: 'Enter location, name, etc.',
+              prefixIcon: Icon(Icons.search),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('CANCEL'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _searchQuery = controller.text;
+                });
+                _loadData();
+                Navigator.pop(context);
+              },
+              child: const Text('SEARCH'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
