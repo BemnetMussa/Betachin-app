@@ -31,3 +31,72 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
     // Load user properties on widget initialization
     _loadProperties();
   }
+  // Fetch user-owned properties from Supabase
+  Future<void> _loadProperties() async {
+    setState(() => _isLoading = true);
+    try {
+      final properties = await _supabaseService.getUserProperties();
+      if (!mounted) return; // Check if widget is still mounted
+      setState(() {
+        _properties = properties;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading properties: ${e.toString()}')),
+      );
+    }
+  }
+
+  // Show options menu for editing, listing/delisting, or deleting a property
+  void _showPropertyOptions(PropertyModel property) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit Property'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(
+                    context,
+                    '/edit_property',
+                    arguments: property,
+                  ).then((_) => _loadProperties());
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  property.isActive ? Icons.visibility_off : Icons.visibility,
+                ),
+                title: Text(
+                  property.isActive ? 'Delist Property' : 'List Property',
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _togglePropertyListing(property);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text(
+                  'Delete Property',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDeleteProperty(property);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
