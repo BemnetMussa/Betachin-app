@@ -5,7 +5,6 @@ import '../../services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../utils/reusable/property_card.dart';
 import 'property_detail.dart';
-import 'package:logging/logging.dart';
 import './my_properties_page.dart'; // Import MyPropertiesPage
 import './favorites_page.dart'; // Import FavoritesPage
 import './profile_page.dart'; // Import ProfilePage
@@ -24,8 +23,6 @@ class _HomePageState extends State<HomePage> {
   final SupabaseService _supabaseService = SupabaseService(
     supabase: Supabase.instance.client,
   );
-  // Logger for debugging and error tracking
-  final _logger = Logger('HomePage');
 
   // State variables for properties, favorites, and UI
   List<PropertyModel> _properties = [];
@@ -96,8 +93,8 @@ class _HomePageState extends State<HomePage> {
   // Build the main UI with navigation and conditional FAB
   @override
   Widget build(BuildContext context) {
-    // Define pages for navigation
-    final List<Widget> _pages = [
+    // Define pages for navigation (without leading underscore)
+    final List<Widget> pages = [
       _buildHomePage(),
       const FavoritesPage(),
       const MyPropertiesPage(),
@@ -123,7 +120,7 @@ class _HomePageState extends State<HomePage> {
         centerTitle: true,
       ),
       // Body: Displays the selected page based on navigation index
-      body: _pages[_currentIndex],
+      body: pages[_currentIndex],
       // FloatingActionButton: Shown only on My Properties page to add a new property
       floatingActionButton: _currentIndex == 2
           ? FloatingActionButton(
@@ -251,11 +248,11 @@ class _HomePageState extends State<HomePage> {
                             color: Color.fromARGB(255, 255, 54, 54),
                           ),
                           const SizedBox(height: 16),
-                          Text(
+                          const Text(
                             'No properties found',
                             style: TextStyle(
                               fontSize: 18,
-                              color: const Color.fromARGB(255, 255, 0, 0),
+                              color: Color.fromARGB(255, 255, 0, 0),
                             ),
                           ),
                         ],
