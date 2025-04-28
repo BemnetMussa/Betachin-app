@@ -90,3 +90,64 @@ class _HomePageState extends State<HomePage> {
       }
     }
   }
+  
+  // Build the main UI with navigation and conditional FAB
+  @override
+  Widget build(BuildContext context) {
+    // Define pages for navigation
+    final List<Widget> _pages = [
+      _buildHomePage(),
+      const FavoritesPage(),
+      const MyPropertiesPage(),
+      const ProfilePage(),
+    ];
+
+    return Scaffold(
+      // AppBar: Topmost component displaying the app title
+      appBar: AppBar(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Betachin',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+                color: Theme.of(context).primaryColor,
+              ),
+            ),
+          ],
+        ),
+        centerTitle: true,
+      ),
+      // Body: Displays the selected page based on navigation index
+      body: _pages[_currentIndex],
+      // FloatingActionButton: Shown only on My Properties page to add a new property
+      floatingActionButton: _currentIndex == 2
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/add_property')
+                    .then((_) => _loadData());
+              },
+              tooltip: 'Add Property',
+              child: const Icon(Icons.add),
+            )
+          : null,
+      // BottomNavigationBar: Navigation footer for switching pages
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        type: BottomNavigationBarType.fixed, // Important for 4+ items
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favorites'),
+          BottomNavigationBarItem(icon: Icon(Icons.apartment), label: 'My Properties'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ],
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
+    );
+  }
