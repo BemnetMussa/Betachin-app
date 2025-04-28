@@ -31,3 +31,21 @@ class _FavoritesPageState extends State<FavoritesPage> {
     // Load favorite properties on widget initialization
     _loadFavorites();
   }
+  // Fetch favorite properties from Supabase
+  Future<void> _loadFavorites() async {
+    setState(() => _isLoading = true);
+    try {
+      final properties = await _supabaseService.getFavoriteProperties();
+      if (!mounted) return;
+      setState(() {
+        _favoriteProperties = properties;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading favorites: ${e.toString()}')),
+      );
+    }
+  }
