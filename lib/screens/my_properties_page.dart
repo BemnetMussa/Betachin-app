@@ -100,3 +100,60 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
       },
     );
   }
+// Toggle the active/inactive status of a property
+  Future<void> _togglePropertyListing(PropertyModel property) async {
+    try {
+      await _supabaseService.togglePropertyListing(
+        property.id,
+        !property.isActive,
+      );
+
+      if (!mounted) return; // Check if widget is still mounted
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            property.isActive
+                ? 'Property delisted successfully. It is now removed from the Home page.'
+                : 'Property listed successfully. It will now appear on the Home page.',
+          ),
+        ),
+      );
+
+      _loadProperties();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+    }
+  }
+
+  // Show confirmation dialog for deleting a property
+  void _confirmDeleteProperty(PropertyModel property) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete Property'),
+          content: Text(
+            'Are you sure you want to delete "${property.propertyName}"? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('CANCEL'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _deleteProperty(property);
+              },
+              child: const Text('DELETE', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
