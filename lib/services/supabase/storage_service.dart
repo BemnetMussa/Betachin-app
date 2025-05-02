@@ -39,4 +39,18 @@ class StorageService {
   }
 
 
+
+  // Helper method to read web file as bytes
+  Future<Uint8List> _readWebFileAsBytes(html.File file) {
+    final completer = Completer<Uint8List>();
+    final reader = html.FileReader();
+
+    reader.onLoadEnd.listen((event) {
+      final result = reader.result as Uint8List;
+      completer.complete(result);
+    });
+
+    reader.readAsArrayBuffer(file);
+    return completer.future;
+  }
 }
