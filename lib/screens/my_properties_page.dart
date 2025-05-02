@@ -150,7 +150,6 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
     );
   }
 
-  // Method to handle the async deletion separately
   Future<void> _deleteProperty(PropertyModel property) async {
     try {
       await _supabaseService.deleteProperty(property.id);
@@ -171,103 +170,159 @@ class _MyPropertiesPageState extends State<MyPropertiesPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Removed the AppBar since it's already provided by the HomePage
-    return _isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : _properties.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.home_work, size: 64, color: Colors.grey),
-                    const SizedBox(height: 16),
-                    Text(
-                      'You have no properties',
-                      style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          '/add_property',
-                        ).then((_) => _loadProperties());
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add Property'),
-                    ),
-                  ],
-                ),
-              )
-            : RefreshIndicator(
-                onRefresh: _loadProperties,
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _properties.length,
-                  itemBuilder: (context, index) {
-                    final property = _properties[index];
+    return Scaffold(
+      appBar: AppBar(
+        // Removed the title text as requested
+        elevation: 0,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _properties.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.home_work, size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      Text(
+                        'You have no properties',
+                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/add_property',
+                          ).then((_) => _loadProperties());
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Property'),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadProperties,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _properties.length,
+                    itemBuilder: (context, index) {
+                      final property = _properties[index];
 
-                    return Stack(
-                      children: [
-                        PropertyCard(
-                          id: property.id,
-                          propertyName: property.propertyName,
-                          address: "${property.address}, ${property.city}",
-                          rating: property.rating,
-                          price: property.price,
-                          isRent: property.listingType == 'rent',
-                          imageUrl: property.primaryImageUrl ?? '',
-                          bedrooms: property.bedrooms,
-                          bathrooms: property.bathrooms,
-                          squareFeet: property.squareFeet,
-                          isFavorite: false,
-                          onCardPressed: () {
-                            Navigator.pushNamed(
-                              context,
-                              '/property_detail',
-                              arguments: property.id,
-                            ).then((_) => _loadProperties());
-                          },
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(
+                                  26), // Changed from withOpacity(0.1) to withAlpha(26)
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: property.isActive
-                                  ? Colors.green
-                                  : Colors.grey,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              property.isActive ? 'Active' : 'Inactive',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+                        child: Column(
+                          children: [
+                            // Property Card with zero bottom padding and border radius only on top
+                            ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                topRight: Radius.circular(12),
+                              ),
+                              child: PropertyCard(
+                                id: property.id,
+                                propertyName: property.propertyName,
+                                address:
+                                    "${property.address}, ${property.city}",
+                                rating: property.rating,
+                                price: property.price,
+                                isRent: property.listingType == 'rent',
+                                imageUrl: property.primaryImageUrl ?? '',
+                                bedrooms: property.bedrooms,
+                                bathrooms: property.bathrooms,
+                                squareFeet: property.squareFeet,
+                                isFavorite: false,
+                                onCardPressed: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/property_detail',
+                                    arguments: property.id,
+                                  ).then((_) => _loadProperties());
+                                },
                               ),
                             ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 10,
-                          left: 10,
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.more_vert,
-                              color: Colors.white,
+
+                            // Status and options bar with gradient - attached directly to property card
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                  colors: property.isActive
+                                      ? [
+                                          Colors.teal.shade700,
+                                          Colors.teal.shade500
+                                        ]
+                                      : [
+                                          Colors.grey.shade700,
+                                          Colors.grey.shade500
+                                        ],
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    // Menu options button (3 dots)
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.more_vert,
+                                        color: Colors.white,
+                                      ),
+                                      onPressed: () =>
+                                          _showPropertyOptions(property),
+                                      constraints: const BoxConstraints(),
+                                      padding: EdgeInsets.zero,
+                                      visualDensity: VisualDensity.compact,
+                                      tooltip: 'Options',
+                                    ),
+
+                                    // Active/Inactive status indicator
+                                    Text(
+                                      property.isActive ? 'Active' : 'Inactive',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            onPressed: () => _showPropertyOptions(property),
-                          ),
+                          ],
                         ),
-                      ],
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              );
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(
+            context,
+            '/add_property',
+          ).then((_) => _loadProperties());
+        },
+        tooltip: 'Add Property',
+        child: const Icon(Icons.add),
+      ),
+    );
   }
 }

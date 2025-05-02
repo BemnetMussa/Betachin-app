@@ -1,129 +1,143 @@
-//ignore_for_file: use_build_context_synchronously
-
+// lib/screens/favorites/favorites_page.dart
 import 'package:flutter/material.dart';
+import '../../models/property_model.dart';
+import '../../services/supabase_service.dart';
+import '../../utils/reusable/property_card.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import './property_detail.dart'; // Adjust path as needed
 
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+class FavoritesPage extends StatefulWidget {
+  const FavoritesPage({super.key});
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  State<FavoritesPage> createState() => _FavoritesPageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
-  final _supabase = Supabase.instance.client;
-  String _email = '';
-  String _userId = '';
+class _FavoritesPageState extends State<FavoritesPage> {
+  final SupabaseService _supabaseService = SupabaseService(
+    supabase: Supabase.instance.client,
+  );
+
+  List<PropertyModel> _favoriteProperties = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadUserProfile();
+    _loadFavorites();
   }
 
-  Future<void> _loadUserProfile() async {
+  Future<void> _loadFavorites() async {
     setState(() => _isLoading = true);
     try {
-      final user = _supabase.auth.currentUser;
-      if (user != null) {
-        setState(() {
-          _email = user.email ?? 'No email found';
-          _userId = user.id;
-          _isLoading = false;
-        });
-      }
+      final properties = await _supabaseService.getFavoriteProperties();
+      if (!mounted) return;
+      setState(() {
+        _favoriteProperties = properties;
+        _isLoading = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading profile: ${e.toString()}')),
-        );
-      }
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading favorites: ${e.toString()}')),
+      );
+    }
+  }
+
+  Future<void> _toggleFavorite(int propertyId) async {
+    try {
+      await _supabaseService.toggleFavorite(propertyId);
+      if (!mounted) return;
+      // Remove the property from the list since it's no longer a favorite
+      setState(() {
+        _favoriteProperties
+            .removeWhere((property) => property.id == propertyId);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Removed from favorites')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return _isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.blue,
-                  child: Icon(Icons.person, size: 70, color: Colors.white),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'User ID: $_userId',
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Email: $_email',
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 24),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.person),
-                  title: const Text('Edit Profile'),
-                  onTap: () {
-                    // For now, just show a snackbar
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Edit profile not implemented yet')),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.security),
-                  title: const Text('Change Password'),
-                  onTap: () {
-                    // For now, just show a snackbar
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Change password not implemented yet')),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.logout),
-                  title: const Text('Log Out'),
-                  onTap: () {
-                    _handleLogout();
-                  },
-                ),
-              ],
-            ),
-          );
-  }
+    return Column(
+      children: [
+        // Header
+        Padding(
+          padding: const EdgeInsets.all(0),
+        ),
 
-  // Fixed method to properly handle async operations with BuildContext
-  void _handleLogout() async {
-    // Store the context before the async operation
-    final navigatorContext = context;
+        // Main content
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _favoriteProperties.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.favorite_border,
+                              size: 64, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No favorite properties',
+                            style: TextStyle(
+                                fontSize: 18, color: Colors.grey[600]),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Properties you favorite will appear here',
+                            style: TextStyle(
+                                fontSize: 14, color: Colors.grey[500]),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadFavorites,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _favoriteProperties.length,
+                        itemBuilder: (context, index) {
+                          final property = _favoriteProperties[index];
 
-    try {
-      await _supabase.auth.signOut();
-
-      // After signOut completes, check if widget is still mounted
-      if (!mounted) return;
-
-      // Now it's safe to use the stored context after checking mounted
-      Navigator.pushReplacementNamed(navigatorContext, '/login');
-    } catch (e) {
-      if (!mounted) return;
-
-      // Now it's safe to use the stored context after checking mounted
-      ScaffoldMessenger.of(navigatorContext).showSnackBar(
-        SnackBar(content: Text('Logout failed: ${e.toString()}')),
-      );
-    }
+                          return PropertyCard(
+                            id: property.id,
+                            propertyName: property.propertyName,
+                            address: "${property.address}, ${property.city}",
+                            rating: property.rating,
+                            price: property.price,
+                            isRent: property.listingType == 'rent',
+                            imageUrl: property.primaryImageUrl ?? '',
+                            bedrooms: property.bedrooms,
+                            bathrooms: property.bathrooms,
+                            squareFeet: property.squareFeet,
+                            isFavorite: true,
+                            onFavoritePressed: () =>
+                                _toggleFavorite(property.id),
+                            onCardPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PropertyDetailPage(
+                                    propertyId: property.id,
+                                  ),
+                                ),
+                              ).then((_) => _loadFavorites());
+                            },
+                          );
+                        },
+                      ),
+                    ),
+        ),
+      ],
+    );
   }
 }

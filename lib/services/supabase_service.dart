@@ -38,9 +38,9 @@ class SupabaseService {
   }) async {
     try {
       var query = supabase.from('properties').select('''
-      *,
-      property_images(image_url, is_primary)
-    ''');
+        *,
+        property_images(image_url, is_primary)
+      ''').eq('is_active', true);
 
       // Apply listing type filters if specified
       if (rentOnly) {
@@ -177,7 +177,7 @@ class SupabaseService {
     }
   }
 
-  // Get user's properties
+  //Get users properties - updated to ensure active status is correctly retrieved
   Future<List<PropertyModel>> getUserProperties() async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) {
@@ -185,10 +185,12 @@ class SupabaseService {
     }
 
     try {
+      await refreshSession(); // Ensure token is valid
+
       var query = supabase.from('properties').select('''
         *,
         property_images(image_url, is_primary)
-      ''').eq('user_id', userId);
+      ''').eq('user_id', userId).order('created_at', ascending: false);
 
       final response = await query;
       final List<dynamic> data = response;
@@ -218,7 +220,8 @@ class SupabaseService {
             'listing_type': item['listing_type'],
             'rating': item['rating'] ?? 0.0,
             'created_at': item['created_at'],
-            'is_active': item['is_active'] ?? true,
+            'is_active':
+                item['is_active'] ?? true, // Ensure is_active is properly set
           };
           propertyImages[propertyId] = [];
         }
@@ -244,15 +247,19 @@ class SupabaseService {
         final imageData = propertyImages[propertyId] ?? [];
         property['image_urls'] =
             imageData.map((img) => img['image_url'] as String).toList();
-        property['primary_image_url'] = imageData.firstWhere(
+
+        // Find primary image or use the first one
+        final primaryImageData = imageData.firstWhere(
           (img) => img['is_primary'] == true,
           orElse: () =>
               imageData.isNotEmpty ? imageData[0] : {'image_url': null},
-        )['image_url'];
+        );
 
+        property['primary_image_url'] = primaryImageData['image_url'];
         properties.add(PropertyModel.fromJson(property));
       }
 
+      _logger.info('Retrieved ${properties.length} user properties');
       return properties;
     } catch (e) {
       _logger.severe('Error fetching user properties: $e');
@@ -640,7 +647,8 @@ class SupabaseService {
     }
   }
 
-  // Toggle property listing status - used in MyPropertiesPage
+  // Toggle property listing status - updated with session refresh
+  // Ensure this method in SupabaseService works correctly
   Future<void> togglePropertyListing(int propertyId, bool isActive) async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) {
@@ -648,14 +656,22 @@ class SupabaseService {
     }
 
     try {
+      await refreshSession(); // Ensure the token is valid
+
+      // Verify ownership first to prevent unauthorized changes
       await supabase
           .from('properties')
-          .update({'is_active': isActive})
+          .select('id')
           .eq('id', propertyId)
-          .eq('user_id', userId);
+          .eq('user_id', userId)
+          .single();
+
+      // Update the property status
+      await supabase
+          .from('properties')
+          .update({'is_active': isActive}).eq('id', propertyId);
     } catch (e) {
-      _logger.severe('Error toggling property listing: $e');
-      rethrow;
+      throw Exception('Failed to update property status: $e');
     }
   }
 
