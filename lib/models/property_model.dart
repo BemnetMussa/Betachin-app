@@ -1,3 +1,4 @@
+//property_model.dart
 class PropertyModel {
   final int id;
   final String userId;

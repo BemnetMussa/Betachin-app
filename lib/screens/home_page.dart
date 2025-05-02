@@ -44,6 +44,9 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
+      // Make sure to refresh session before fetching data
+      await _supabaseService.refreshSession();
+
       final properties = await _supabaseService.getProperties(
         rentOnly: _showRentOnly,
         buyOnly: _showBuyOnly,
@@ -148,6 +151,11 @@ class _HomePageState extends State<HomePage> {
           setState(() {
             _currentIndex = index;
           });
+
+          // Refresh data when navigating back to home page
+          if (index == 0) {
+            _loadData();
+          }
         },
       ),
     );
@@ -159,22 +167,14 @@ class _HomePageState extends State<HomePage> {
       children: [
         // Title Section: Encourages users to explore properties
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Text(
-            'Explore your home',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).primaryColor,
-            ),
-          ),
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
         ),
         // Filter and Search Card: Horizontal row of filter chips and search button
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
+            horizontal: 10,
+            vertical: 0,
           ),
           child: Row(
             children: [

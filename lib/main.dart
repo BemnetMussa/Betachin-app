@@ -69,7 +69,7 @@ class MyApp extends StatelessWidget {
           return PropertyDetailPage(propertyId: propertyId);
         },
         '/edit_property': (context) {
-          final property =
+          final PropertyModel property =
               ModalRoute.of(context)!.settings.arguments as PropertyModel;
           return EditPropertyPage(property: property);
         },

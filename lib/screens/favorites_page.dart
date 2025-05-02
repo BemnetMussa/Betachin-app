@@ -71,15 +71,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       children: [
         // Header
         Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            'My Favorites',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).primaryColor,
-            ),
-          ),
+          padding: const EdgeInsets.all(0),
         ),
 
         // Main content
