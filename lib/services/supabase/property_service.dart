@@ -522,5 +522,72 @@ class PropertyService {
     }
   }
 
+  // Delete a property
+  Future<void> deleteProperty(int propertyId) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
 
+    try {
+      _logger.info('Deleting property ID: $propertyId for user: $userId');
+      _logger.info(
+          'Authentication state: ${supabase.auth.currentSession != null ? "Authenticated" : "Not Authenticated"}');
+      _logger.info(
+          'Current session token: ${supabase.auth.currentSession?.accessToken.substring(0, 10)}...');
+      
+      if (supabase.auth.currentSession != null) {
+        await supabase.auth.refreshSession();
+      }
+
+      // 1. Verify ownership
+      await supabase
+          .from('properties')
+          .select()
+          .eq('id', propertyId)
+          .eq('user_id', userId)
+          .single();
+
+      // 2. Get all image URLs for this property
+      final imageResponse = await supabase
+          .from('property_images')
+          .select('image_url')
+          .eq('property_id', propertyId);
+
+      final List<dynamic> imageData = imageResponse;
+      final List<String> imagePaths = [];
+
+      // Extract storage paths from URLs
+      for (var item in imageData) {
+        final imageUrl = item['image_url'] as String;
+        final regex = RegExp(r'images\/(.+)');
+        final match = regex.firstMatch(imageUrl);
+        if (match != null && match.groupCount >= 1) {
+          final storagePath = match.group(1);
+          if (storagePath != null) {
+            imagePaths.add(storagePath);
+          }
+        }
+      }
+
+      // 3. Delete all property images from storage
+      if (imagePaths.isNotEmpty) {
+        try {
+          _logger.info('Removing images from storage: $imagePaths');
+          await supabase.storage.from('images').remove(imagePaths);
+        } catch (e) {
+          // Continue even if storage deletion fails
+          _logger.warning('Failed to delete some storage files: $e');
+        }
+      }
+
+      // 4. Delete property records (cascade will delete property_images entries)
+      _logger.info('Deleting property records for property ID: $propertyId');
+      await supabase.from('properties').delete().eq('id', propertyId);
+      _logger.info('Property deleted successfully');
+    } catch (e) {
+      _logger.severe('Error deleting property: $e');
+      throw Exception('Property not found or you don\'t have permission: $e');
+    }
+  }
 }
