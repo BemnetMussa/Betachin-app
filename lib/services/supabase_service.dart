@@ -160,6 +160,7 @@ class SupabaseService {
         }
       }
 
+
       // If no primary image was marked, use the first one
       if (primaryImageUrl == null && imageUrls.isNotEmpty) {
         primaryImageUrl = imageUrls[0];
@@ -176,6 +177,7 @@ class SupabaseService {
       rethrow;
     }
   }
+
 
   //Get users properties - updated to ensure active status is correctly retrieved
   Future<List<PropertyModel>> getUserProperties() async {
@@ -240,6 +242,7 @@ class SupabaseService {
         }
       }
 
+
       // Convert to PropertyModel objects
       List<PropertyModel> properties = [];
       for (var propertyId in propertyMap.keys) {
@@ -266,6 +269,7 @@ class SupabaseService {
       rethrow;
     }
   }
+
 
   // Get favorite properties
   Future<List<PropertyModel>> getFavoriteProperties() async {
@@ -336,6 +340,7 @@ class SupabaseService {
         }
       }
 
+
       // Convert to PropertyModel objects
       List<PropertyModel> properties = [];
       for (var propertyId in propertyMap.keys) {
@@ -359,6 +364,9 @@ class SupabaseService {
     }
   }
 
+
+
+  // Add property 
   // Add a property - updated with session refresh and detailed logging
   Future<PropertyModel> addProperty({
     required String propertyName,
