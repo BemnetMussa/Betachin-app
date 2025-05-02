@@ -6,9 +6,3 @@ class File {
   final String type = '';
 }
 
-// Empty class to satisfy FileReader references
-class FileReader {
-  dynamic result;
-  Stream<dynamic> get onLoadEnd => const Stream.empty();
-  void readAsArrayBuffer(dynamic file) {}
-}
