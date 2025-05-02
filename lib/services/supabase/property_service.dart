@@ -257,3 +257,115 @@ class PropertyService {
       rethrow;
     }
   }
+
+  // Add property
+  Future<PropertyModel> addProperty({
+    required String propertyName,
+    required String address,
+    String? floor,
+    required String city,
+    required int bathrooms,
+    required int bedrooms,
+    required int squareFeet,
+    required double price,
+    required String description,
+    required String type,
+    required String listingType,
+    required List<dynamic> images, // List<File> or List<html.File>
+  }) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      _logger.info('Adding property for user: $userId');
+      _logger.info(
+          'Authentication state: ${supabase.auth.currentSession != null ? "Authenticated" : "Not Authenticated"}');
+      _logger.info(
+          'Current session token: ${supabase.auth.currentSession?.accessToken.substring(0, 10)}...');
+      
+      // Ensure token is valid before upload
+      if (supabase.auth.currentSession != null) {
+        await supabase.auth.refreshSession();
+      }
+
+      // 1. Insert property data
+      final propertyResponse = await supabase
+          .from('properties')
+          .insert({
+            'user_id': userId,
+            'property_name': propertyName,
+            'address': address,
+            'floor': floor,
+            'city': city,
+            'bath_rooms': bathrooms,
+            'bed_rooms': bedrooms,
+            'square_feet': squareFeet,
+            'price': price,
+            'description': description,
+            'type': type,
+            'listing_type': listingType,
+            'is_active': true,
+            'rating': 0.0,
+          })
+          .select()
+          .single();
+
+      final propertyId = propertyResponse['id'];
+      _logger.info('Property inserted with ID: $propertyId');
+      List<String> imageUrls = [];
+
+      // 2. Upload images and create records
+      for (var i = 0; i < images.length; i++) {
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}_$i';
+        final filePath = 'Property images/properties/$propertyId/$fileName';
+        String imageUrl;
+
+        _logger.info('Uploading image $i to path: $filePath');
+        if (kIsWeb) {
+          // Handle web file upload
+          imageUrl = await storageService.uploadWebFile(images[i], filePath);
+        } else {
+          // Handle native file upload
+          imageUrl = await storageService.uploadFile(images[i], filePath);
+        }
+
+        imageUrls.add(imageUrl);
+
+        // Create image record
+        await supabase.from('property_images').insert({
+          'property_id': propertyId,
+          'image_url': imageUrl,
+          'is_primary': i == 0, // First image is primary
+        });
+      }
+
+      _logger.info('Property added with ${imageUrls.length} images');
+      // 3. Return the newly created property with images
+      return PropertyModel(
+        id: propertyId,
+        userId: userId,
+        propertyName: propertyName,
+        address: address,
+        floor: floor,
+        city: city,
+        bathrooms: bathrooms,
+        bedrooms: bedrooms,
+        squareFeet: squareFeet,
+        price: price,
+        description: description,
+        type: type,
+        listingType: listingType,
+        rating: 0.0,
+        isActive: true,
+        createdAt: DateTime.now(),
+        imageUrls: imageUrls,
+        primaryImageUrl: imageUrls.isNotEmpty ? imageUrls[0] : null,
+      );
+    } catch (e) {
+      _logger.severe('Error adding property: $e');
+      rethrow;
+    }
+  }
+}
