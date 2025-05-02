@@ -38,7 +38,27 @@ class StorageService {
     }
   }
 
+  // Upload a file from web
+  Future<String> uploadWebFile(html.File file, String filePath) async {
+    try {
+      final bytes = await _readWebFileAsBytes(file);
+      _logger.info(
+          'Web upload: bucket=images, path=$filePath, contentType=${file.type}');
 
+      await supabase.storage.from('images').uploadBinary(
+            filePath,
+            bytes,
+            fileOptions: FileOptions(contentType: file.type),
+          );
+
+      final imageUrl = supabase.storage.from('images').getPublicUrl(filePath);
+      _logger.info('Web image URL: $imageUrl');
+      return imageUrl;
+    } catch (e) {
+      _logger.severe('Error uploading web file: $e');
+      rethrow;
+    }
+  }
 
   // Helper method to read web file as bytes
   Future<Uint8List> _readWebFileAsBytes(html.File file) {
