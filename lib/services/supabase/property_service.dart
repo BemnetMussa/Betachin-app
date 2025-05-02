@@ -368,4 +368,159 @@ class PropertyService {
       rethrow;
     }
   }
+
+  // Update property method
+  Future<void> updateProperty({
+    required int propertyId,
+    required String propertyName,
+    required String address,
+    String? floor,
+    required String city,
+    required int bathrooms,
+    required int bedrooms,
+    required int squareFeet,
+    required double price,
+    required String description,
+    required String type,
+    required String listingType,
+    List<dynamic>? newImages,
+    List<String>? imagesToDelete,
+  }) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      _logger.info('Updating property ID: $propertyId for user: $userId');
+      _logger.info(
+          'Authentication state: ${supabase.auth.currentSession != null ? "Authenticated" : "Not Authenticated"}');
+      _logger.info(
+          'Current session token: ${supabase.auth.currentSession?.accessToken.substring(0, 10)}...');
+      
+      // Ensure token is valid before upload
+      if (supabase.auth.currentSession != null) {
+        await supabase.auth.refreshSession();
+      }
+
+      // Verify ownership
+      await supabase
+          .from('properties')
+          .select()
+          .eq('id', propertyId)
+          .eq('user_id', userId)
+          .single();
+
+      // Handle image deletions if provided
+      if (imagesToDelete != null && imagesToDelete.isNotEmpty) {
+        for (final imageUrl in imagesToDelete) {
+          _logger.info('Deleting image: $imageUrl');
+          // Delete the image record from the database
+          await supabase
+              .from('property_images')
+              .delete()
+              .eq('image_url', imageUrl)
+              .eq('property_id', propertyId);
+
+          // Extract the file path from the URL to delete from storage
+          try {
+            final regex = RegExp(r'images\/(.+)');
+            final match = regex.firstMatch(imageUrl);
+            if (match != null && match.groupCount >= 1) {
+              final storagePath = match.group(1);
+              if (storagePath != null) {
+                _logger.info('Removing from storage: $storagePath');
+                await supabase.storage.from('images').remove([storagePath]);
+              }
+            }
+          } catch (e) {
+            _logger.warning('Failed to delete image from storage: $e');
+            // Continue with the rest of the operation even if storage deletion fails
+          }
+        }
+      }
+
+      // Handle new image uploads if provided
+      if (newImages != null && newImages.isNotEmpty) {
+        for (var i = 0; i < newImages.length; i++) {
+          final fileName = '${DateTime.now().millisecondsSinceEpoch}_$i';
+          final filePath = 'Property images/properties/$propertyId/$fileName';
+          String imageUrl;
+
+          _logger.info('Uploading new image $i to path: $filePath');
+          if (kIsWeb) {
+            // Handle web file upload
+            imageUrl = await storageService.uploadWebFile(newImages[i], filePath);
+          } else {
+            // Handle native file upload
+            imageUrl = await storageService.uploadFile(newImages[i], filePath);
+          }
+
+          _logger
+              .info('Inserting new image URL into property_images: $imageUrl');
+          // Create new image record
+          await supabase.from('property_images').insert({
+            'property_id': propertyId,
+            'image_url': imageUrl,
+            'is_primary': false, // New uploads are not primary by default
+          });
+        }
+      }
+
+      // Update the property data
+      Map<String, dynamic> updates = {
+        'property_name': propertyName,
+        'address': address,
+        'floor': floor,
+        'city': city,
+        'bath_rooms': bathrooms,
+        'bed_rooms': bedrooms,
+        'square_feet': squareFeet,
+        'price': price,
+        'description': description,
+        'type': type,
+        'listing_type': listingType,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      _logger.info('Updating property data with: $updates');
+      await supabase.from('properties').update(updates).eq('id', propertyId);
+      _logger.info('Property updated successfully');
+    } catch (e) {
+      _logger.severe('Error updating property: $e');
+      throw Exception('Failed to update property: $e');
+    }
+  }
+
+  // Toggle property listing status
+  Future<void> togglePropertyListing(int propertyId, bool isActive) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      // Ensure the token is valid
+      if (supabase.auth.currentSession != null) {
+        await supabase.auth.refreshSession();
+      }
+
+      // Verify ownership first to prevent unauthorized changes
+      await supabase
+          .from('properties')
+          .select('id')
+          .eq('id', propertyId)
+          .eq('user_id', userId)
+          .single();
+
+      // Update the property status
+      await supabase
+          .from('properties')
+          .update({'is_active': isActive}).eq('id', propertyId);
+    } catch (e) {
+      throw Exception('Failed to update property status: $e');
+    }
+  }
+
+
 }
