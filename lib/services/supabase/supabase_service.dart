@@ -18,9 +18,28 @@ class SupabaseService {
     userService = UserService(supabase: supabase);
   }
 
-
+  // Refresh the authentication session to ensure the token is valid
+  Future<void> refreshSession() async {
+    try {
+      if (supabase.auth.currentSession != null) {
+        await supabase.auth.refreshSession();
+        _logger.info('Session refreshed successfully');
+      } else {
+        _logger.info('No session to refresh');
+      }
+    } catch (e) {
+      _logger.severe('Error refreshing session: $e');
+    }
+  }
   
-
+  // Get the current user ID or throw an exception if not authenticated
+  String getCurrentUserId() {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+    return userId;
+  }
 }
   
     
